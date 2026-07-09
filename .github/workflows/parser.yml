@@ -2,11 +2,11 @@ name: Auto VPN Parser
 
 on:
   schedule:
-    - cron: '*/10 * * * *' # Запуск каждые 10 минут
-  workflow_dispatch: # Позволяет запускать вручную кнопкой
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
 permissions:
-  contents: write # Разрешаем роботу обновлять файлы в вашем репозитории
+  contents: write
 
 jobs:
   build:
@@ -15,18 +15,5 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
       - name: Run script
         run: python main.py
-
-      - name: Commit and Push changes
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add my_sub.txt
-          git commit -m "Auto-update VPN list" || exit 0
-          git push
