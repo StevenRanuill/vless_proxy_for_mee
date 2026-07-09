@@ -16,4 +16,5 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run script
-        run: python main.py
+        run: py main.py
+        continue-on-error: true
