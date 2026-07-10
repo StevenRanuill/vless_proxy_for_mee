@@ -17,7 +17,7 @@ jobs:
 
       - name: Run script
         shell: cmd
-        run: "C:\\Users\\Skibidi_tualet\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe main.py"
+        run: py -3.14 main.py
 
         continue-on-error: true
 
