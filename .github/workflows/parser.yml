@@ -16,5 +16,5 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run script
-        run: py main.py
+        run: C:\Users\Skibidi_tualet\AppData\Local\Microsoft\WindowsApps\python.exe main.py
         continue-on-error: true
