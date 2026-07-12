@@ -87,19 +87,68 @@ def fetch_source(url):
         return []
 
 def optimize_node(proxy_link):
+    """
+    Ультра-отказоустойчивый механизм дедупликации серверов.
+    Вычленяет IP/хост и порт без использования капризного urlparse.
+    """
     try:
-        parsed = urlparse(proxy_link.strip().replace('&amp;', '&'))
-        if not parsed.netloc or not parsed.scheme or not parsed.hostname:
+        node_str = proxy_link.strip().replace('&amp;', '&')
+        
+        # 1. Быстро определяем схему (vless, vmess и т.д.)
+        if "://" not in node_str:
             return None, None
-        fingerprint = f"{parsed.hostname}:{parsed.port or 443}"
-        allowed_params = ['security', 'sni', 'type', 'path', 'pbk', 'fp', 'flow', 'sid']
-        query_pairs = parse_qsl(parsed.query)
-        clean_query = [(k, v) for k, v in query_pairs if k in allowed_params]
-        node_hash = hashlib.md5(parsed.hostname.encode()).hexdigest()[:8]
-        cleaned_node = urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, urlencode(clean_query), f"NODE-{node_hash}"))
+        scheme, body = node_str.split("://", 1)
+        
+        # 2. Отсекаем имя ноды (всё, что после знака #)
+        if "#" in body:
+            body, _ = body.split("#", 1)
+            
+        # 3. Отсекаем query-параметры (всё, что после знака ?)
+        if "?" in body:
+            body, query_part = body.split("?", 1)
+        else:
+            query_part = ""
+            
+        # 4. Находим разделитель авторизации '@'
+        if "@" in body:
+            _, server_part = body.split("@", 1)
+        else:
+            server_part = body
+            
+        # 5. Извлекаем хост и порт. Обрабатываем IPv6 и стандартные адреса хостов
+        if "]" in server_part:  # IPv6 формат [2001:db8::1]:443
+            host_part, port_part = server_part.split("]", 1)
+            host = host_part + "]"
+            port = port_part.replace(":", "") if ":" in port_part else "443"
+        else:
+            if ":" in server_part:
+                host, port = server_part.split(":", 1)
+            else:
+                host = server_part
+                port = "443"
+                
+        # Чистим порт от случайных символов (если в ссылке затесался мусор)
+        port = "".join(filter(str.isdigit, port))
+        port = port if port else "443"
+        host = host.strip().lower()
+        
+        if not host:
+            return None, None
+            
+        # Создаем уникальный отпечаток для защиты от дубликатов
+        fingerprint = f"{host}:{port}"
+        
+        # Пересобираем очищенную ноду со стандартизированным хэш-именем
+        node_hash = hashlib.md5(host.encode()).hexdigest()[:8]
+        
+        # Восстанавливаем query, если он был
+        rebuilt_query = f"?{query_part}" if query_part else ""
+        cleaned_node = f"{scheme}://{body}{rebuilt_query}#NODE-{node_hash}"
+        
         return fingerprint, cleaned_node
     except:
         return None, None
+
 
 def load_and_clean_history():
     if not os.path.exists(CONFIG["HISTORY_FILE"]):
