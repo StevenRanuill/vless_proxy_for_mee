@@ -2,14 +2,14 @@ name: Skibidi_tualet_proxy
 on:
   schedule:
     - cron: '0 0 * * *' # Автоматический запуск раз в сутки в 03:00 по МСК
-  workflow_dispatch: # Сохраняет серую кнопку ручного перезапуска на сайте GitHub
+  workflow_dispatch: # Кнопка ручного запуска на сайте GitHub
 
 permissions:
   contents: write
 
 jobs:
   gather-data:
-    runs-on: ubuntu-latest # Сборщик баз работает в быстром и бесплатном облаке GitHub
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,12 +27,12 @@ jobs:
         with:
           name: raw-chunks-artifact
           path: raw_chunks/
-          if-no-files-found: error # Билд упадет здесь, если fetcher.py ничего не соберет
-          retention-days: 1        # Храним временные пачки ровно сутки
+          if-no-files-found: error
+          retention-days: 1
 
   test-data:
     needs: gather-data
-    runs-on: self-hosted # Жесткое перенаправление задачи на фоновую службу вашего ПК
+    runs-on: self-hosted # Передача задачи на ваш ПК
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -41,7 +41,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: raw-chunks-artifact
-          path: raw_chunks/ # Скачивание архива пачек строго в рабочую папку раннера
+          path: raw_chunks/
 
       - name: Run Checker Script on PC
         shell: cmd
@@ -61,6 +61,7 @@ jobs:
           chcp 65001
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
+          git add my_sub.txt
           git add output/*.txt
           git add history_blacklist.json
           git commit -m "Auto-update subscriptions and history blacklist [skip ci]"
