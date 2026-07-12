@@ -105,14 +105,26 @@ jobs:
           PYTHONIOENCODING: utf-8
         run: |
           chcp 65001
+          
+          :: Шаг 1: Даем Windows-стеку 15 секунд прийти в себя после чекера
+          ping 127.0.0.1 -n 16 >nul
+          ipconfig /flushdns
+          
+          :: Шаг 2: Настраиваем локальный Git на агрессивные повторы при сетевых затыках
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
+          git config --global http.lowSpeedLimit 0
+          git config --global http.lowSpeedTime 999999
           
-          :: ИСПРАВЛЕНО: Убран Bash-слеш экранирования для CMD Windows
+          :: Шаг 3: Добавляем файлы
           if exist subs git add subs/*
           if exist logs git add logs/*
           if exist core git add core/*
           
           git status
           git commit --allow-empty -m "Auto-update organized proxy structure [skip ci]"
-          git push origin main
+          
+          :: Шаг 4: Умный пуш с повторными попытками при ошибке DNS
+          echo Начинаем отправку в репозиторий...
+          git push origin main || (ping 127.0.0.1 -n 10 >nul && ipconfig /flushdns && git push origin main)
+
