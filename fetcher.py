@@ -60,7 +60,7 @@ ELITE_SUBSCRIPTIONS = [
     "https://etoneya.su/whitelist"    
 ]
 
-ef normalize_github_url(url):
+def normalize_github_url(url):
     url = url.strip()
     if "github.com" in url and "/raw/" in url:
         url = url.replace("github.com", "://githubusercontent.com").replace("/raw/", "/")
