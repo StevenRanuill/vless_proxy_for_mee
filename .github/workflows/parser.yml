@@ -82,14 +82,20 @@ jobs:
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           
-          :: Принудительно добавляем только существующие файлы, чтобы Гит не падал
+          :: Добавляем новые разделенные файлы подписок
+          if exist sub_tg_youtube.txt git add sub_tg_youtube.txt
+          if exist sub_tg_youtube_insta.txt git add sub_tg_youtube_insta.txt
+          if exist sub_tg_insta_discord.txt git add sub_tg_insta_discord.txt
+          if exist sub_whitelists.txt git add sub_whitelists.txt
+          
+          :: Стадии логирования фетчера
           if exist 01_raw_all_downloaded.txt git add 01_raw_all_downloaded.txt
           if exist 02_raw_unique_deduplicated.txt git add 02_raw_unique_deduplicated.txt
           if exist all_gathered_raw.txt git add all_gathered_raw.txt
-          if exist my_sub.txt git add my_sub.txt
           if exist parser_log.txt git add parser_log.txt
           if exist history_blacklist.json git add history_blacklist.json
           
           git status
-          git commit --allow-empty -m "Auto-update multi-stage logs and subscriptions [skip ci]"
+          git commit --allow-empty -m "Auto-update split-service subscriptions [skip ci]"
           git push origin main
+
