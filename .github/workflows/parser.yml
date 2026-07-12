@@ -45,26 +45,32 @@ jobs:
   test-data:
     needs: gather-data
     runs-on: self-hosted
-    timeout-minutes: 15 # ИСПРАВЛЕНО: Жесткий лимит. Больше воркфлоу никогда не зависнет бесконечно
+    timeout-minutes: 15
     steps:
+      # ШАГ 1: Даем системе 20 секунд кулдауна и чистим DNS ДО ЛЮБЫХ запросов к GitHub
+      - name: Hard Reset Network State
+        shell: cmd
+        run: |
+          echo Ожидание восстановления сетевого стека Windows...
+          ping 127.0.0.1 -n 21 >nul
+          ipconfig /flushdns
+          
+          :: Принудительно закрываем старые зависшие TCP-соединения, если они остались
+          netsh int ip reset c:\resetlog.txt >nul 2>&1
+          ipconfig /flushdns
+        continue-on-error: true
+
+      # ШАГ 2: Только теперь стягиваем репозиторий
       - name: Checkout repository
         uses: actions/checkout@v5
 
-
-      # Жёсткий сброс сети средствами Windows перед обращением к GitHub API
-      - name: Force Clean Network State
-        shell: cmd
-        run: |
-          ipconfig /flushdns
-          netsh interface ipv4 set dns name="Ethernet" static 1.1.1.1 primary
-          ping 127.0.0.1 -n 3 >nul
-        continue-on-error: true # Если имя адаптера не "Ethernet", шаг просто пропустится
-
+      # ШАГ 3: Скачиваем артефакты (теперь DNS будет чистым и ENOTFOUND уйдет)
       - name: Download Proxy Data
         uses: actions/download-artifact@v5
         with:
           name: proxy-data-artifact
           path: .
+
 
 
       # ИСПРАВЛЕНО: Защита от зависших сетевых сокетов на Windows-машине ранера
