@@ -54,7 +54,8 @@ jobs:
         shell: cmd
         run: |
           ipconfig /flushdns
-          timeout /t 2 >nul
+          ping 127.0.0.1 -n 3 >nul
+
 
       - name: Download Proxy Data
         uses: actions/download-artifact@v5
