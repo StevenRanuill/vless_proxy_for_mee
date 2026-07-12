@@ -16,7 +16,7 @@ CONFIG = {
     
     # Лимиты и нарезка
     "MAX_CONCURRENT_FETCH": 15,           
-    "MAX_FILE_SIZE": 10485760,            
+    "MAX_FILE_SIZE": 52428800,  # 50 MB (с запасом для любых подписок)       
     "CHUNK_SIZE": 1000,                   
     "CHUNKS_DIR": "raw_chunks",           
     
@@ -78,42 +78,39 @@ def normalize_github_url(url):
     return url
     
 def clean_and_extract(raw_text, url_source=""):
+    # Шаг 1: Декодируем HTML-сущности и приводим к строке
     unescaped = html.unescape(raw_text)
-    clean_text = re.sub(r'[\u200b-\u200d\u200e\u200f\ufeff\u202a-\u202e]', '', unescaped).strip()
     
-    # Расширенное регулярное выражение (поддерживает shadowsocks и hysteria 1)
-    EXTENDED_REGEX = r"(vless|vmess|ss|shadowsocks|trojan|hysteria|hysteria2|tuic)://[^\s\"']+"
-
-    # Если текст похож на HTML, выводим предупреждение
-    if "<html" in clean_text.lower() or "<!doctype" in clean_text.lower():
-        print(f"[ВНИМАНИЕ] Источник {url_source} вернул HTML-страницу вместо чистого текста/Base64! Проверьте ссылку (нужна RAW).")
-
-    # Пробуем декодировать Base64
-    if not clean_text.startswith(('vless://', 'vmess://', 'ss://', 'shadowsocks://', 'trojan://', 'hysteria', 'tuic://')):
+    # Шаг 2: Если это Base64 подписка (одна сплошная строка), пробуем декодировать
+    if "://" not in unescaped[:200]:  # Если в начале нет явных протоколов
         try:
-            # Очищаем от переносов строк и мусора
-            b64_clean = "".join(clean_text.split())
+            b64_clean = "".join(unescaped.split())
             b64_clean = re.sub(r'[^A-Za-z0-9+/=]', '', b64_clean)
             b64_clean += "=" * ((4 - len(b64_clean) % 4) % 4)
-            
             decoded = base64.b64decode(b64_clean).decode('utf-8', errors='ignore')
-            if any(p in decoded for p in ['vless://', 'vmess://', 'ss://', 'trojan://']):
-                print(f"[ДЕБАГ] Успешно декодирован Base64 из {url_source}")
-                clean_text = decoded
-        except Exception as e:
-            print(f"[ОШИБКА БАЗЫ64] Не удалось декодировать Base64 в {url_source}: {e}")
+            if "://" in decoded:
+                unescaped = decoded
+        except:
+            pass
 
-    found = re.findall(EXTENDED_REGEX, clean_text)
+    # Шаг 3: Построчный разбор текста (Универсальный обход re.findall)
     sanitized = []
-    for node in found:
-        clean_node = node.strip().strip('"').strip("'").strip('(').strip(')')
-        # Нормализуем shadowsocks обратно в ss
-        if clean_node.startswith("shadowsocks://"):
-            clean_node = clean_node.replace("shadowsocks://", "ss://", 1)
-        if "://" in clean_node:
-            sanitized.append(clean_node)
+    # Разбиваем текст по любым разделителям: переносы строк, пробелы, кавычки
+    raw_lines = re.split(r'[\s"\'\(\)\{\}\[\]\t\r\n]+', unescaped)
+    
+    # Список поддерживаемых протоколов
+    valid_protocols = ('vless://', 'vmess://', 'ss://', 'trojan://', 'hysteria2://', 'tuic://', 'shadowsocks://')
+
+    for line in raw_lines:
+        line_clean = line.strip()
+        if line_clean.startswith(valid_protocols):
+            # Нормализуем устаревший shadowsocks
+            if line_clean.startswith("shadowsocks://"):
+                line_clean = line_clean.replace("shadowsocks://", "ss://", 1)
+                
+            sanitized.append(line_clean)
             
-    print(f"[РЕЗУЛЬТАТ] Из {url_source} успешно извлечено нод: {len(sanitized)}")
+    print(f"[РЕЗУЛЬТАТ] Из {url_source} извлечено нод: {len(sanitized)}")
     return sanitized
 
 async def fetch_source(semaphore, session, url):
