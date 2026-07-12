@@ -11,24 +11,25 @@ from datetime import datetime, timedelta  # ИСПРАВЛЕНО: Добавле
 
 # Заглушка конфигурации (подставьте ваши реальные значения)
 CONFIG = {
-    # Регулярное выражение (ИСПРАВЛЕНО: компактное ИЛИ без ломающих строку плюсов)
-    "PROXY_REGEX": r"(vless|vmess|ss|trojan|hysteria2|tuic)://[^\s\"']+",
+    # ИСПРАВЛЕНО: Добавлено ?:, чтобы re.findall возвращал ВСЮ строку прокси целиком, а не только имя протокола
+    "PROXY_REGEX": r"(?:vless|vmess|ss|trojan|hysteria2|tuic)://[^\s\"']+",
     
     # Лимиты и нарезка
-    "MAX_CONCURRENT_FETCH": 15,           # Количество одновременных скачиваний
-    "MAX_FILE_SIZE": 10485760,            # Максимальный размер файла (10MB)
-    "CHUNK_SIZE": 1000,                   # Размер пачки нод для чекера
-    "CHUNKS_DIR": "raw_chunks",           # Папка для выгрузки пачек
+    "MAX_CONCURRENT_FETCH": 15,           
+    "MAX_FILE_SIZE": 10485760,            
+    "CHUNK_SIZE": 1000,                   
+    "CHUNKS_DIR": "raw_chunks",           
     
     # Ротация истории (мягкий фильтр)
     "HISTORY_FILE": "core/history_blacklist.json",
-    "RETAIN_DAYS": 3,                     # Хранить метки 3 дня
+    "RETAIN_DAYS": 3,                     
     
     # Логи стадий сборки
     "FILE_STAGE_1": "logs/01_raw_all_downloaded.txt",
     "FILE_STAGE_2": "logs/02_raw_unique_deduplicated.txt",
     "FILE_STAGE_3": "logs/all_gathered_raw.txt"
 }
+
 
 
 
