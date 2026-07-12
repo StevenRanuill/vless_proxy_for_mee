@@ -97,11 +97,17 @@ def main():
                 continue
             final_pool.append(clean_node)
             
-    # Полная жесткая пересборка директории пачек для Actions
     if os.path.exists(CONFIG["CHUNKS_DIR"]):
         shutil.rmtree(CONFIG["CHUNKS_DIR"])
     os.makedirs(CONFIG["CHUNKS_DIR"], exist_ok=True)
     
+    # ЗАЩИТА: Если пул пуст, создаем пустой файл, чтобы upload-artifact не падал
+    if not final_pool:
+        with open(os.path.join(CONFIG["CHUNKS_DIR"], "chunk_empty.txt"), "w", encoding="utf-8") as f:
+            f.write("")
+        print("Пул пуст. Создан пустой файл-заглушка.")
+        return
+
     chunk_size = CONFIG["CHUNK_SIZE"]
     chunk_num = 0
     for i in range(0, len(final_pool), chunk_size):
