@@ -24,7 +24,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install aiohttp
 
-      # Создаем структуру папок перед запуском скрипта
       - name: Create Structure Directories
         run: mkdir -p logs core subs
 
@@ -35,13 +34,13 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: proxy-data-artifact
+          # ИСПРАВЛЕНО: Явно перечисляем пути, включая файлы внутри папок
           path: |
             raw_chunks/
             logs/
             core/
           if-no-files-found: error
           retention-days: 1
-
 
   test-data:
     needs: gather-data
@@ -50,10 +49,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      # ИСПРАВЛЕНО: Защита от зависших сетевых сокетов на Windows-машине ранера
+      - name: Flush DNS and Reset Network Sockets
+        shell: cmd
+        run: |
+          ipconfig /flushdns
+          timeout /t 2 >nul
+
       - name: Download Proxy Data
         uses: actions/download-artifact@v5
         with:
           name: proxy-data-artifact
+          # ИСПРАВЛЕНО: Скачиваем строго в корень воркспейса
           path: .
 
       - name: Install Dependencies on PC
@@ -82,10 +89,10 @@ jobs:
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           
-          :: Добавляем папки целиком (если они существуют)
-          if exist subs git add subs/\*
-          if exist logs git add logs/\*
-          if exist core git add core/\*
+          :: ИСПРАВЛЕНО: Убран Bash-слеш экранирования для CMD Windows
+          if exist subs git add subs/*
+          if exist logs git add logs/*
+          if exist core git add core/*
           
           git status
           git commit --allow-empty -m "Auto-update organized proxy structure [skip ci]"
