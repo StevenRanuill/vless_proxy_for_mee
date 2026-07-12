@@ -71,24 +71,32 @@ def normalize_github_url(url):
     return url
 
 def clean_and_extract(raw_text):
+    # Декодируем html-сущности и убираем ломающие регулярку невидимые символы
     unescaped = html.unescape(raw_text)
     clean_text = re.sub(r'[\u200b-\u200d\u200e\u200f\ufeff\u202a-\u202e]', '', unescaped).strip()
     
+    # Пытаемся обработать весь текст как Base64, если он не начинается с протоколов напрямую
     if not clean_text.startswith(('vless://', 'vmess://', 'ss://', 'trojan://', 'hysteria2://', 'tuic://')):
         try:
+            # Очищаем строку от мусора, оставляя только валидные символы Base64
             b64_clean = re.sub(r'[^A-Za-z0-9+/=]', '', clean_text)
+            # Дописываем паддинг, если его не хватает
+            b64_clean += "=" * ((4 - len(b64_clean) % 4) % 4)
             decoded = base64.b64decode(b64_clean).decode('utf-8', errors='ignore')
-            if any(p in decoded for p in ['vless://', 'vmess://', 'ss://', 'trojan://']):
+            if any(p in decoded for p in ['vless://', 'vmess://', 'ss://', 'trojan://', 'hysteria2://', 'tuic://']):
                 clean_text = decoded
         except:
             pass
 
+    # Ищем ноды по нашему регулярному выражению
     found = re.findall(CONFIG["PROXY_REGEX"], clean_text)
     sanitized = []
     for node in found:
         clean_node = node.strip().strip('"').strip("'").strip('(').strip(')')
-        if "@" in clean_node and "://" in clean_node:
+        # ИСПРАВЛЕНО: Убрали обязательное требование знака '@', чтобы не терять VMESS и ShadowSocks без авторизации в URI
+        if "://" in clean_node:
             sanitized.append(clean_node)
+            
     return sanitized
 
 async def fetch_source(semaphore, session, url):
@@ -96,19 +104,16 @@ async def fetch_source(semaphore, session, url):
         url = normalize_github_url(url)
         try:
             headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-            async with session.get(url, headers=headers, timeout=12) as response:
+            async with session.get(url, headers=headers, timeout=15) as response:
                 if response.status == 200:
-                    content = bytearray()
-                    while len(content) < CONFIG["MAX_FILE_SIZE"]:
-                        chunk = await response.content.read(1024 * 64)
-                        if not chunk:
-                            break
-                        content.extend(chunk)
-                    text_content = content.decode('utf-8', errors='ignore')
-                    return clean_and_extract(text_content)
+                    # ИСПРАВЛЕНО: Читаем текст целиком через .text(), чтобы не рвать Base64-блоки на куски в памяти
+                    text_content = await response.text(errors='ignore')
+                    if len(text_content) <= CONFIG["MAX_FILE_SIZE"]:
+                        return clean_and_extract(text_content)
         except:
             pass
         return []
+
 
 def optimize_node(proxy_link):
     """ИСПРАВЛЕНО: Генерация отпечатка без разрушения структуры исходной ссылки."""
