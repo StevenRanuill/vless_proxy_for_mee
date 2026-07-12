@@ -49,6 +49,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      # Жёсткий сброс сети средствами Windows перед обращением к GitHub API
+      - name: Force Clean Network State
+        shell: cmd
+        run: |
+          ipconfig /flushdns
+          netsh interface ipv4 set dns name="Ethernet" static 1.1.1.1 primary
+          ping 127.0.0.1 -n 3 >nul
+        continue-on-error: true # Если имя адаптера не "Ethernet", шаг просто пропустится
+
+      - name: Download Proxy Data
+        uses: actions/download-artifact@v5
+        with:
+          name: proxy-data-artifact
+          path: .
+
+
       # ИСПРАВЛЕНО: Защита от зависших сетевых сокетов на Windows-машине ранера
       - name: Flush DNS and Reset Network Sockets
         shell: cmd
