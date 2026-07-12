@@ -4,6 +4,7 @@ import html
 import os
 import hashlib
 import json
+import shutil
 from datetime import datetime, timedelta
 from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 
@@ -12,7 +13,7 @@ CONFIG = {
     "CHUNK_SIZE": 200,
     "CHUNKS_DIR": "raw_chunks",
     "HISTORY_FILE": "history_blacklist.json",
-    "RETAIN_DAYS": 3  # Сколько дней не повторять один и тот же сервер
+    "RETAIN_DAYS": 3
 }
 
 SOURCES_STATIC = [
@@ -60,20 +61,15 @@ def optimize_node(proxy_link):
     except:
         return None, None
 
-# --- НОВЫЙ МЕХАНИЗМ: РАБОТА С ИСТОРИЕЙ И СКЛЕЙКА БЛЭКЛИСТА ---
 def load_and_clean_history():
-    """Загружает историю и удаляет записи старше RETAIN_DAYS."""
     if not os.path.exists(CONFIG["HISTORY_FILE"]):
         return {}
     try:
         with open(CONFIG["HISTORY_FILE"], "r", encoding="utf-8") as f:
             history = json.load(f)
-        
-        # Фильтрация устаревших записей
         now = datetime.now()
         clean_history = {}
         cutoff_date = now - timedelta(days=CONFIG["RETAIN_DAYS"])
-        
         for fp_hash, date_str in history.items():
             node_date = datetime.strptime(date_str, "%Y-%m-%d")
             if node_date > cutoff_date:
@@ -83,50 +79,31 @@ def load_and_clean_history():
         return {}
 
 def main():
-    print("1. Загрузка истории ротации серверов...")
     history_db = load_and_clean_history()
-    print(f"-> В блэклисте истории сейчас активны: {len(history_db)} серверов.")
-
-    print("2. Сбор баз серверами GitHub...")
     raw_pool = set()
     for url in SOURCES_STATIC:
         raw_pool.update(fetch_source(url, is_tg=False))
     for chan in SOURCES_TELEGRAM:
         raw_pool.update(fetch_source(chan, is_tg=True))
     
-    print(f"3. Всего сырых строк: {len(raw_pool)}. Дедупликация и фильтрация истории...")
     seen_fps = set()
     final_pool = []
-    skipped_by_history = 0
-    
     for node in raw_pool:
         fp, clean_node = optimize_node(node)
         if fp and fp not in seen_fps:
             seen_fps.add(fp)
-            
-            # Хэшируем отпечаток 'хост:порт', чтобы проверять по базе истории
             fp_hash = hashlib.md5(fp.encode()).hexdigest()
-            
-            # Если сервер уже использовался недавно — пропускаем его
             if fp_hash in history_db:
-                skipped_by_history += 1
                 continue
-                
             final_pool.append(clean_node)
             
-    print(f"-> Отброшено дубликатов по истории прошлых запусков: {skipped_by_history}")
-    print(f"-> Передано на этап нарезки: {len(final_pool)} новых уникальных нод.")
-            
-    # Очистка папки raw_chunks перед созданием новых
+    # Полная жесткая пересборка директории пачек для Actions
     if os.path.exists(CONFIG["CHUNKS_DIR"]):
-        for f in os.listdir(CONFIG["CHUNKS_DIR"]):
-            os.remove(os.path.join(CONFIG["CHUNKS_DIR"], f))
-            
-    # Нарезка пула на пачки
+        shutil.rmtree(CONFIG["CHUNKS_DIR"])
     os.makedirs(CONFIG["CHUNKS_DIR"], exist_ok=True)
+    
     chunk_size = CONFIG["CHUNK_SIZE"]
     chunk_num = 0
-    
     for i in range(0, len(final_pool), chunk_size):
         chunk_num = (i // chunk_size) + 1
         chunk_data = final_pool[i:i + chunk_size]
@@ -134,7 +111,7 @@ def main():
         with open(chunk_file, "w", encoding="utf-8") as f:
             f.write("\n".join(chunk_data))
             
-    print(f"4. Успешно нарезано {chunk_num} пачек по {chunk_size} нод в папку {CONFIG['CHUNKS_DIR']}")
+    print(f"Успешно подготовлено пачек: {chunk_num}")
 
 if __name__ == '__main__':
     main()
