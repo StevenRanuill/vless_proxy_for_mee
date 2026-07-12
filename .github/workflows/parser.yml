@@ -57,17 +57,18 @@ jobs:
           PYTHONIOENCODING: utf-8
         run: |
           chcp 65001
-          
           cd /d "C:\actions-runner\_work\vless_proxy_for_mee\vless_proxy_for_mee"
-          
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           
+          :: Добавляем файлы пошаговых логов и подписку
+          git add 01_raw_all_downloaded.txt
+          git add 02_raw_unique_deduplicated.txt
+          git add all_gathered_raw.txt
           git add my_sub.txt
-          git add parser_log.txt           # <--- НОВАЯ СТРОКА: сохраняем лог проверок на GitHub
+          git add parser_log.txt
           git add history_blacklist.json
           
           git status
-          
-          git commit --allow-empty -m "Auto-update subscriptions and history blacklist [skip ci]"
+          git commit --allow-empty -m "Auto-update multi-stage logs and subscriptions [skip ci]"
           git push origin main
