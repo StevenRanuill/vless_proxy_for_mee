@@ -11,16 +11,10 @@ from datetime import datetime, timedelta  # ИСПРАВЛЕНО: Добавле
 
 # Заглушка конфигурации (подставьте ваши реальные значения)
 CONFIG = {
-    "MAX_CONCURRENT_FETCH": 20,
-    "MAX_FILE_SIZE": 10 * 1024 * 1024, # 10MB
-    "CHUNK_SIZE": 500,
-    "PROXY_REGEX": r"(vless|vmess|ss|trojan|hysteria2|tuic)://[^\s\"']+",
-    "HISTORY_FILE": "core/history_blacklist.json",
-    "RETAIN_DAYS": 3,
-    "FILE_STAGE_1": "logs/01_raw_fetched.txt",
-    "FILE_STAGE_2": "logs/02_unique_all.txt",
-    "FILE_STAGE_3": "logs/03_to_check.txt",
-    "CHUNKS_DIR": "raw_chunks"
+    "PROXY_REGEX": r'(vless://[^\s"\']+|vmess://[^\s"\']+|trojan://[^\s"\']+|ss://[^\s"\']+|hysteria2://[^\s"\']+|tuic://[^\s"\']+)',
+    "CHUNK_SIZE": 1000, "CHUNKS_DIR": "raw_chunks", "HISTORY_FILE": "core/history_blacklist.json",
+    "FILE_STAGE_1": "logs/01_raw_all_downloaded.txt", "FILE_STAGE_2": "logs/02_raw_unique_deduplicated.txt",
+    "FILE_STAGE_3": "logs/all_gathered_raw.txt", "RETAIN_DAYS": 3, "MAX_CONCURRENT_FETCH": 15, "MAX_FILE_SIZE": 10485760
 }
 
 
