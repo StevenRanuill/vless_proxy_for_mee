@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -24,20 +24,21 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install aiohttp
 
+      # Создаем структуру папок перед запуском скрипта
+      - name: Create Structure Directories
+        run: mkdir -p logs core subs
+
       - name: Run Fetcher Script
         run: python fetcher.py
 
-      # Передаем ВСЕ сгенерированные файлы на стадиях, чтобы ПК мог их закоммитить
       - name: Upload Workspace Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: proxy-data-artifact
           path: |
             raw_chunks/
-            01_raw_all_downloaded.txt
-            02_raw_unique_deduplicated.txt
-            all_gathered_raw.txt
-            history_blacklist.json
+            logs/
+            core/
           if-no-files-found: error
           retention-days: 1
 
@@ -47,30 +48,29 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      # Скачиваем чанки и сгенерированные фетчером логи прямо в корень воркспейса на ПК
       - name: Download Proxy Data
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: proxy-data-artifact
           path: .
 
-      # Гарантируем наличие необходимых библиотек в вашем Windows Python перед тестом
       - name: Install Dependencies on PC
         shell: cmd
         run: |
           "C:\pythoncore-3.14-64\python.exe" -m pip install --upgrade pip
           "C:\pythoncore-3.14-64\python.exe" -m pip install aiohttp
 
-      # Запускаем чекер. Скрипт должен лежать в репозитории (или вызываться из рабочей папки раннера)
       - name: Run Checker Script on PC
         shell: cmd
         env:
           PYTHONIOENCODING: utf-8
         run: |
           chcp 65001
-          "C:\pythoncore-3.14-64\python.exe" "C:\Proxy\vless_proxy_for_mee\checker.py"
+          if not exist logs mkdir logs
+          if not exist subs mkdir subs
+          "C:\pythoncore-3.14-64\python.exe" checker.py
         continue-on-error: true
 
       - name: Sync sub-files back to GitHub
@@ -82,20 +82,11 @@ jobs:
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           
-          :: Добавляем новые разделенные файлы подписок
-          if exist sub_tg_youtube.txt git add sub_tg_youtube.txt
-          if exist sub_tg_youtube_insta.txt git add sub_tg_youtube_insta.txt
-          if exist sub_tg_insta_discord.txt git add sub_tg_insta_discord.txt
-          if exist sub_whitelists.txt git add sub_whitelists.txt
-          
-          :: Стадии логирования фетчера
-          if exist 01_raw_all_downloaded.txt git add 01_raw_all_downloaded.txt
-          if exist 02_raw_unique_deduplicated.txt git add 02_raw_unique_deduplicated.txt
-          if exist all_gathered_raw.txt git add all_gathered_raw.txt
-          if exist parser_log.txt git add parser_log.txt
-          if exist history_blacklist.json git add history_blacklist.json
+          :: Добавляем папки целиком (если они существуют)
+          if exist subs git add subs/\*
+          if exist logs git add logs/\*
+          if exist core git add core/\*
           
           git status
-          git commit --allow-empty -m "Auto-update split-service subscriptions [skip ci]"
+          git commit --allow-empty -m "Auto-update organized proxy structure [skip ci]"
           git push origin main
-
