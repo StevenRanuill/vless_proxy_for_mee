@@ -45,9 +45,11 @@ jobs:
   test-data:
     needs: gather-data
     runs-on: self-hosted
+    timeout-minutes: 15 # ИСПРАВЛЕНО: Жесткий лимит. Больше воркфлоу никогда не зависнет бесконечно
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
 
       # Жёсткий сброс сети средствами Windows перед обращением к GitHub API
       - name: Force Clean Network State
