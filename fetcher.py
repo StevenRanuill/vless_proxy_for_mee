@@ -64,12 +64,10 @@ ELITE_SUBSCRIPTIONS = [
 
 def normalize_github_url(url):
     url = url.strip()
-    if "github.com" in url and "/raw/" in url:
-        url = url.replace("github.com", "githubusercontent.com").replace("/raw/", "/")
-    elif "github.com" in url and "/blob/" in url:
-        url = url.replace("github.com", "githubusercontent.com").replace("/blob/", "/")
+    if "github.com" in url and "/raw/" in url: url = url.replace("github.com", "githubusercontent.com").replace("/raw/", "/")
+    elif "github.com" in url and "/blob/" in url: url = url.replace("github.com", "githubusercontent.com").replace("/blob/", "/")
     return url
-
+    
 def clean_and_extract(raw_text):
     # Декодируем html-сущности и убираем ломающие регулярку невидимые символы
     unescaped = html.unescape(raw_text)
