@@ -76,49 +76,64 @@ def normalize_github_url(url):
     elif "github.com" in url and "/blob/" in url: url = url.replace("github.com", "githubusercontent.com").replace("/blob/", "/")
     return url
     
-def clean_and_extract(raw_text):
-    # Декодируем html-сущности и убираем ломающие регулярку невидимые символы
+def clean_and_extract(raw_text, url_source=""):
     unescaped = html.unescape(raw_text)
     clean_text = re.sub(r'[\u200b-\u200d\u200e\u200f\ufeff\u202a-\u202e]', '', unescaped).strip()
     
-    # Пытаемся обработать весь текст как Base64, если он не начинается с протоколов напрямую
-    if not clean_text.startswith(('vless://', 'vmess://', 'ss://', 'trojan://', 'hysteria2://', 'tuic://')):
-        try:
-            # Очищаем строку от мусора, оставляя только валидные символы Base64
-            b64_clean = re.sub(r'[^A-Za-z0-9+/=]', '', clean_text)
-            # Дописываем паддинг, если его не хватает
-            b64_clean += "=" * ((4 - len(b64_clean) % 4) % 4)
-            decoded = base64.b64decode(b64_clean).decode('utf-8', errors='ignore')
-            if any(p in decoded for p in ['vless://', 'vmess://', 'ss://', 'trojan://', 'hysteria2://', 'tuic://']):
-                clean_text = decoded
-        except:
-            pass
+    # Расширенное регулярное выражение (поддерживает shadowsocks и hysteria 1)
+    EXTENDED_REGEX = r"(vless|vmess|ss|shadowsocks|trojan|hysteria|hysteria2|tuic)://[^\s\"']+"
 
-    # Ищем ноды по нашему регулярному выражению
-    found = re.findall(CONFIG["PROXY_REGEX"], clean_text)
+    # Если текст похож на HTML, выводим предупреждение
+    if "<html" in clean_text.lower() or "<!doctype" in clean_text.lower():
+        print(f"[ВНИМАНИЕ] Источник {url_source} вернул HTML-страницу вместо чистого текста/Base64! Проверьте ссылку (нужна RAW).")
+
+    # Пробуем декодировать Base64
+    if not clean_text.startswith(('vless://', 'vmess://', 'ss://', 'shadowsocks://', 'trojan://', 'hysteria', 'tuic://')):
+        try:
+            # Очищаем от переносов строк и мусора
+            b64_clean = "".join(clean_text.split())
+            b64_clean = re.sub(r'[^A-Za-z0-9+/=]', '', b64_clean)
+            b64_clean += "=" * ((4 - len(b64_clean) % 4) % 4)
+            
+            decoded = base64.b64decode(b64_clean).decode('utf-8', errors='ignore')
+            if any(p in decoded for p in ['vless://', 'vmess://', 'ss://', 'trojan://']):
+                print(f"[ДЕБАГ] Успешно декодирован Base64 из {url_source}")
+                clean_text = decoded
+        except Exception as e:
+            print(f"[ОШИБКА БАЗЫ64] Не удалось декодировать Base64 в {url_source}: {e}")
+
+    found = re.findall(EXTENDED_REGEX, clean_text)
     sanitized = []
     for node in found:
         clean_node = node.strip().strip('"').strip("'").strip('(').strip(')')
-        # ИСПРАВЛЕНО: Убрали обязательное требование знака '@', чтобы не терять VMESS и ShadowSocks без авторизации в URI
+        # Нормализуем shadowsocks обратно в ss
+        if clean_node.startswith("shadowsocks://"):
+            clean_node = clean_node.replace("shadowsocks://", "ss://", 1)
         if "://" in clean_node:
             sanitized.append(clean_node)
             
+    print(f"[РЕЗУЛЬТАТ] Из {url_source} успешно извлечено нод: {len(sanitized)}")
     return sanitized
 
 async def fetch_source(semaphore, session, url):
     async with semaphore:
-        url = normalize_github_url(url)
+        norm_url = normalize_github_url(url)
         try:
             headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-            async with session.get(url, headers=headers, timeout=15) as response:
+            async with session.get(norm_url, headers=headers, timeout=15) as response:
                 if response.status == 200:
-                    # ИСПРАВЛЕНО: Читаем текст целиком через .text(), чтобы не рвать Base64-блоки на куски в памяти
                     text_content = await response.text(errors='ignore')
-                    if len(text_content) <= CONFIG["MAX_FILE_SIZE"]:
-                        return clean_and_extract(text_content)
-        except:
-            pass
+                    # Если файл огромный, сообщаем об этом
+                    if len(text_content) > CONFIG["MAX_FILE_SIZE"]:
+                        print(f"[ОШИБКА] Файл {norm_url} слишком большой ({len(text_content)} байт) и превысил лимит.")
+                        return []
+                    return clean_and_extract(text_content, norm_url)
+                else:
+                    print(f"[ОШИБКА СЕТИ] {norm_url} вернул статус {response.status}")
+        except Exception as e:
+            print(f"[СБОЙ СОЕДИНЕНИЯ] Не удалось подключиться к {norm_url}: {e}")
         return []
+
 
 
 def optimize_node(proxy_link):
