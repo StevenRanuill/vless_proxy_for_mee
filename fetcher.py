@@ -11,16 +11,17 @@ from datetime import datetime, timedelta
 
 CONFIG = {
     "PROXY_REGEX": r'(vless://[^\s"\'<>\(\)]+|vmess://[^\s"\'<>\(\)]+|trojan://[^\s"\'<>\(\)]+|ss://[^\s"\'<>\(\)]+|hysteria2://[^\s"\'<>\(\)]+|tuic://[^\s"\'<>\(\)]+)',
-    "CHUNK_SIZE": 1000,               # Оптимизировано: пачки строго по 1000 нод
+    "CHUNK_SIZE": 1000,
     "CHUNKS_DIR": "raw_chunks",
-    "HISTORY_FILE": "history_blacklist.json",
-    "FILE_STAGE_1": "01_raw_all_downloaded.txt",
-    "FILE_STAGE_2": "02_raw_unique_deduplicated.txt",
-    "FILE_STAGE_3": "all_gathered_raw.txt",
+    "HISTORY_FILE": "core/history_blacklist.json",            # Перенесли в core/
+    "FILE_STAGE_1": "logs/01_raw_all_downloaded.txt",         # Перенесли в logs/
+    "FILE_STAGE_2": "logs/02_raw_unique_deduplicated.txt",     # Перенесли в logs/
+    "FILE_STAGE_3": "logs/all_gathered_raw.txt",               # Перенесли в logs/
     "RETAIN_DAYS": 3,
     "MAX_CONCURRENT_FETCH": 15,
-    "MAX_FILE_SIZE": 10 * 1024 * 1024  # Лимит 10 МБ на файл для защиты от зависаний
+    "MAX_FILE_SIZE": 10 * 1024 * 1024
 }
+
 
 # Используем готовые, уже отфильтрованные авторами подписки (Борцы с ТСПУ)
 ELITE_SUBSCRIPTIONS = [
