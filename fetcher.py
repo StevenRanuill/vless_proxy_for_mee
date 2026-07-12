@@ -1,26 +1,28 @@
 import asyncio
-import aiohttp
+import os
 import re
 import html
-import os
-import hashlib
-import json
-import shutil
 import base64
-from datetime import datetime, timedelta
+import json
+import hashlib
+import shutil
+import aiohttp
+from datetime import datetime, timedelta  # ИСПРАВЛЕНО: Добавлен timedelta
 
+# Заглушка конфигурации (подставьте ваши реальные значения)
 CONFIG = {
-    "PROXY_REGEX": r'(vless://[^\s"\']+|vmess://[^\s"\']+|trojan://[^\s"\']+|ss://[^\s"\']+|hysteria2://[^\s"\']+|tuic://[^\s"\']+)',
-    "CHUNK_SIZE": 1000,               
-    "CHUNKS_DIR": "raw_chunks",
-    "HISTORY_FILE": "core/history_blacklist.json",            
-    "FILE_STAGE_1": "logs/01_raw_all_downloaded.txt",         
-    "FILE_STAGE_2": "logs/02_raw_unique_deduplicated.txt",     
-    "FILE_STAGE_3": "logs/all_gathered_raw.txt",               
+    "MAX_CONCURRENT_FETCH": 20,
+    "MAX_FILE_SIZE": 10 * 1024 * 1024, # 10MB
+    "CHUNK_SIZE": 500,
+    "PROXY_REGEX": r"(vless|vmess|ss|trojan|hysteria2|tuic)://[^\s\"']+",
+    "HISTORY_FILE": "core/history_blacklist.json",
     "RETAIN_DAYS": 3,
-    "MAX_CONCURRENT_FETCH": 15,
-    "MAX_FILE_SIZE": 10 * 1024 * 1024  
+    "FILE_STAGE_1": "logs/01_raw_fetched.txt",
+    "FILE_STAGE_2": "logs/02_unique_all.txt",
+    "FILE_STAGE_3": "logs/03_to_check.txt",
+    "CHUNKS_DIR": "raw_chunks"
 }
+
 
 
 # Используем готовые, уже отфильтрованные авторами подписки (Борцы с ТСПУ)
@@ -70,10 +72,8 @@ def normalize_github_url(url):
 
 def clean_and_extract(raw_text):
     unescaped = html.unescape(raw_text)
-    # Удаление невидимых, ломающих регулярные выражения управляющих символов
     clean_text = re.sub(r'[\u200b-\u200d\u200e\u200f\ufeff\u202a-\u202e]', '', unescaped).strip()
     
-    # Автодекодирование Base64 подписок (с очисткой от невалидных символов и паддинга)
     if not clean_text.startswith(('vless://', 'vmess://', 'ss://', 'trojan://', 'hysteria2://', 'tuic://')):
         try:
             b64_clean = re.sub(r'[^A-Za-z0-9+/=]', '', clean_text)
@@ -98,7 +98,6 @@ async def fetch_source(semaphore, session, url):
             headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
             async with session.get(url, headers=headers, timeout=12) as response:
                 if response.status == 200:
-                    # Потоковое считывание байт кусками для защиты ОЗУ от гигантских файлов
                     content = bytearray()
                     while len(content) < CONFIG["MAX_FILE_SIZE"]:
                         chunk = await response.content.read(1024 * 64)
@@ -110,11 +109,16 @@ async def fetch_source(semaphore, session, url):
         except:
             pass
         return []
+
 def optimize_node(proxy_link):
+    """ИСПРАВЛЕНО: Генерация отпечатка без разрушения структуры исходной ссылки."""
     try:
         node_str = proxy_link.strip().replace('&amp;', '&')
         if "://" not in node_str: return None, None
         scheme, body = node_str.split("://", 1)
+        
+        # Сохраняем чистую копию тела для последующей пересборки
+        original_body = body
         
         query_part = ""
         if "#" in body: body, _ = body.split("#", 1)
@@ -139,8 +143,12 @@ def optimize_node(proxy_link):
             
         fingerprint = f"{host}:{port}"
         node_hash = hashlib.md5(host.encode()).hexdigest()[:8]
-        rebuilt_query = f"?{query_part}" if query_part else ""
-        cleaned_node = f"{scheme}://{body}{rebuilt_query}#NODE-{node_hash}"
+        
+        # Отрезаем старый тег (имя ноды после #) из оригинального тела, если он там был
+        body_no_tag = original_body.split("#")[0]
+        
+        # Пересобираем ноду: схема + все авторизационные данные и параметры + наш хеш-тег
+        cleaned_node = f"{scheme}://{body_no_tag}#NODE-{node_hash}"
         return fingerprint, cleaned_node
     except:
         return None, None
@@ -195,9 +203,6 @@ async def async_main():
             
             fp_hash = hashlib.md5(fp.encode()).hexdigest()
             
-            # МЯГКАЯ ФИЛЬТРАЦИЯ: 
-            # Скипаем только если нода уже чекалась сегодня.
-            # Если её нет в базе или она проверялась вчера и раньше — пускаем в новый пул.
             if fp_hash not in history_db or history_db[fp_hash] != current_date_str:
                 final_pool.append(clean_node)
                 history_db[fp_hash] = current_date_str
