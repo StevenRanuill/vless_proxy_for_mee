@@ -59,17 +59,22 @@ jobs:
           PYTHONIOENCODING: utf-8
         run: |
           chcp 65001
+          
+          :: 1. Жестко принуждаем консоль Windows зайти в физическую папку репозитория
+          cd /d "C:\actions-runner\_work\vless_proxy_for_mee\vless_proxy_for_mee"
+          
+          :: 2. Настраиваем пользователя для текущего коммита
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           
-          :: Принудительно сбрасываем кэш индекса Git, чтобы он увидел файлы
-          git update-index --refresh
+          :: 3. Добавляем файлы напрямую по их локальным именам без переменных окружения
+          git add my_sub.txt
+          git add output/*.txt
+          git add history_blacklist.json
           
-          :: Явно добавляем файлы, указывая точечные пути
-          git add "%GITHUB_WORKSPACE%\my_sub.txt"
-          git add "%GITHUB_WORKSPACE%\output\*.txt"
-          git add "%GITHUB_WORKSPACE%\history_blacklist.json"
+          :: 4. Выводим статус в лог, чтобы вы глазами увидели, зацепил ли Git изменения
+          git status
           
-          :: Делаем коммит. Флаг --allow-empty спасет от падения, если изменений мало
+          :: 5. Делаем коммит и отправляем его на сервер
           git commit --allow-empty -m "Auto-update subscriptions and history blacklist [skip ci]"
           git push origin main
