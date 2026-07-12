@@ -51,17 +51,32 @@ ELITE_SUBSCRIPTIONS = [
     "https://etoneya.su/whitelist"    
 ]
 
-def clean_and_extract(raw_html):
-    unescaped = html.unescape(raw_html)
-    clean_text = re.sub(r'<[^>]+>', ' ', unescaped)
-    clean_text = re.sub(r'[\u200b-\u200d\u200e\u200f\ufeff\u202a-\u202e]', '', clean_text)
+def clean_and_extract(raw_text):
+    unescaped = html.unescape(raw_text)
+    # Побайтово вырезаем невидимый Unicode-мусор мессенджеров
+    clean_text = re.sub(r'[\u200b-\u200d\u200e\u200f\ufeff\u202a-\u202e]', '', unescaped)
+    
+    # Декодируем Base64, если вся подписка зашифрована
+    if not clean_text.strip().startswith(('vless://', 'vmess://', 'ss://', 'trojan://', 'hysteria2://', 'tuic://')):
+        try:
+            decoded = base64.b64decode(clean_text.strip()).decode('utf-8', errors='ignore')
+            if decoded.startswith(('vless://', 'vmess://', 'ss://', 'trojan://', 'hysteria2://', 'tuic://')):
+                clean_text = decoded
+        except:
+            pass
+
     found = re.findall(CONFIG["PROXY_REGEX"], clean_text)
     sanitized = []
     for node in found:
+        # Сначала очищаем саму строку от лишних символов по краям
         clean_node = node.strip().strip('"').strip("'").strip('(').strip(')')
+        
+        # Валидация строки до разделения по знаку '#'
         if "@" in clean_node and "://" in clean_node:
             sanitized.append(clean_node)
+            
     return sanitized
+
 
 def fetch_source(url):
     try:
