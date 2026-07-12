@@ -6,9 +6,13 @@ from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 
 CONFIG = {
     "PROXY_REGEX": r'(vless://[^\s]+|vmess://[^\s]+|trojan://[^\s]+|ss://[^\s]+|hysteria2://[^\s]+|tuic://[^\s]+)',
-    "CHUNK_SIZE": 300,
-    "CHUNKS_DIR": "raw_chunks"
+    "CHUNK_SIZE": 200,
+    "CHUNKS_DIR": "raw_chunks",
+    "HISTORY_FILE": "history_blacklist.json",  # <--- КРИТИЧЕСКИЙ КЛЮЧ: Убедитесь, что эта строка есть!
+    "ALL_RAW_FILE": "all_gathered_raw.txt",
+    "RETAIN_DAYS": 3
 }
+
 
 # Используем готовые, уже отфильтрованные авторами подписки (Борцы с ТСПУ)
 ELITE_SUBSCRIPTIONS = [
