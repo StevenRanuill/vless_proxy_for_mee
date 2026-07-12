@@ -1,8 +1,8 @@
-name: Skibidi_tualet_proxy 
+name: Chunked Auto VPN Parser
 on:
   schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch:
+    - cron: '0 0 * * *' # Запуск раз в сутки в 03:00 по МСК
+  workflow_dispatch: # Кнопка ручного запуска на сайте
 
 permissions:
   contents: write
@@ -26,12 +26,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: raw-chunks-artifact
-          path: raw_chunks/          # Явный экспорт папки
-          retention-days: 1          # Нам нужен этот файл только на один запуск
+          path: raw_chunks/
+          if-no-files-found: error   # Жесткий контроль: упадет здесь, если папка пуста
+          retention-days: 1
 
   test-data:
     needs: gather-data
-    runs-on: self-hosted
+    runs-on: self-hosted # Передача задачи на ваш ПК
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -40,7 +41,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: raw-chunks-artifact
-          path: raw_chunks/          # Скачиваем строго в целевую папку раннера
+          path: raw_chunks/
 
       - name: Run Checker Script on PC
         shell: cmd
