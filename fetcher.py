@@ -1,3 +1,5 @@
+print("[ИНИЦИАЛИЗАЦИЯ] Скрипт fetcher.py успешно запущен интерпретатором Python", flush=True)
+
 import asyncio
 import os
 import re
@@ -30,8 +32,6 @@ CONFIG = {
     "FILE_STAGE_2": "logs/02_raw_unique_deduplicated.txt",
     "FILE_STAGE_3": "logs/all_gathered_raw.txt"
 }
-
-
 
 
 
