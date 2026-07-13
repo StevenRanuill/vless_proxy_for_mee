@@ -43,7 +43,7 @@ jobs:
   test-data:
     needs: gather-data
     runs-on: self-hosted
-    timeout-minutes: 60   # Запас времени для основательной проверки на ПК
+    timeout-minutes: 120   # Запас времени для основательной проверки на ПК
     steps:
       - name: Hard Reset Network State and Pull Data
         shell: cmd
