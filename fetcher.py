@@ -305,6 +305,7 @@ async def async_main():
     print(f"  🚀 Передано на ПК нод:     {len(final_pool)}")
     print("="*50 + "\n")
             
+    # Принудительная очистка старых чанков перед генерацией новых
     if os.path.exists(CONFIG["CHUNKS_DIR"]):
         try: shutil.rmtree(CONFIG["CHUNKS_DIR"])
         except: pass
@@ -323,4 +324,3 @@ async def async_main():
 
 if __name__ == "__main__":
     asyncio.run(async_main())
-
