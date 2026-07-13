@@ -288,5 +288,6 @@ async def async_main():
                 f.write("\n".join(chunk))
         log_debug("Все чанки успешно нарезаны и сохранены.")
 
- if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(async_main())
+
