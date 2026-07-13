@@ -30,13 +30,13 @@ jobs:
       - name: Run Fetcher Script
         env:
           PYTHONUNBUFFERED: "1"
-        # Перенаправляем все скрытые ошибки Linux в файл error.txt
         run: |
-          python fetcher.py > logs/fetcher_stdout.log 2> logs/fetcher_stderr.err || true
-          echo "=== СОДЕРЖИМОЕ СТАНДАРТНОГО ВЫВОДА ==="
-          cat logs/fetcher_stdout.log
-          echo "=== СОДЕРЖИМОЕ КРИТИЧЕСКИХ ОШИБОК (STDERR) ==="
-          cat logs/fetcher_stderr.err
+          echo "=== Проверка установленных пакетов ==="
+          python -m pip show aiohttp || echo "ВНИМАНИЕ: aiohttp НЕ НАЙДЕН В СИСТЕМЕ"
+          
+          echo "=== Запуск скрипта с выводом системных ошибок ==="
+          python fetcher.py
+
 
 
       # ИСПРАВЛЕНО: Вместо артефактов пушим чанки прямо в ветку
