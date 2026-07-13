@@ -160,6 +160,7 @@ vless://0d9a6872-cc1b-4a1d-97c0-b26cfb0a2fab@fonts-edge.cyberscaler.net:3001/?ty
 vless://0d9cc99b-d11a-43b8-8613-dc8ef04a326b@44.223.17.190:2053?security=reality&encryption=none&pbk=-dvaet5vTdRvWpkf_1wY2HcWuHDMHK_A_19tUq3QQRQ&headerType=none&fp=chrome&spx=%2Ff6jRSVG0fvHWE7y&type=tcp&sni=www.inel.com&sid=a8434c33#NODE-7cadbc63
 vless://0d9cc99b-d11a-43b8-8613-dc8ef04a326b@54.167.105.123:2053?encryption=none&fp=chrome&headerType=none&pbk=%2Ddvaet5vTdRvWpkf_1wY2HcWuHDMHK_A_19tUq3QQRQ&security=reality&sid=a8434c33&sni=www.inel.com&spx=%2Ff6jRSVG0fvHWE7y&type=tcp#NODE-f9e873eb
 vless://0dbfdd92-a166-4852-9a5b-7cf508d196ab@1.2.3.4.5:1234?encryption=none&security=none&type=tcp#NODE-2cbcc782
+vless://0dbfdd92-a166-4852-9a5b-7cf508d196ab@91.209.71.83:43264?sni=samsung.com&fp=firefox&security=tls#NODE-91d2219b
 vless://0dc3fe97-73e3-4cc2-89a7-331e66540365@46.149.71.46:443?sni=www.avito.ru&alpn=http/1.1&flow=xtls-rprx-vision-udp443&fp=edge&security=tls#NODE-c3e30d56
 vless://0dcdcbae-0ff6-467c-addb-bff403cd689f@139.162.175.65:443?security=none&encryption=none&host=zula.ir&headerType=http&type=tcp#NODE-84c85841
 vless://0de7a4c9-6c9a-4728-b4e8-eb47051e13d4@178.83.46.187:3030?security=none&encryption=none&headerType=none&type=tcp#NODE-ff22f3b0
@@ -997,4 +998,3 @@ vless://213b0839-9041-45e8-91f6-ca6f4a7caaf8@tr.iranvpnstore.site:777?security=n
 vless://213b2aa9-JebheAlNosrah@167.82.231.255:443?path=%2FF_ckUAsh0le%3Fed%3D2048&security=tls&alpn=h2&encryption=none&host=www.ip.gs&fp=randomized&type=ws#NODE-594e343f
 vless://215541be-aeec-4988-8758-db096b79a4dc@172.67.194.145:2083?path=/eyJqdW5rIjoiVDlIckVhME5WZmUiLCJwcm90b2NvbCI6InZsIiwibW9kZSI6InByb3h5aXAiLCJwYW5lbElQcyI6W119?ed=2560&security=tls&alpn=http/1.1&encryption=none&host=ez-882894.kakadada1.workers.dev&fp=chrome&type=ws&sni=Ez-882894.KAkaDadA1.wORkers.DEv#NODE-a3f09619
 vless://215d71a9-0047-4600-9240-7c3b86b62313@46.31.76.3:80?mode=auto&path=/pwpw&security=reality&encryption=none&pbk=oTX6mQJYxkmmdF7Rq_stAKX_hYoOMXGaWmoblFl2zgo&host=bleep.global.ssl.fastly.net&fp=chrome&spx=/&type=xhttp&sni=journalofbigdata.springeropen.com&sid=5942e2#NODE-156de9f6
-vless://2163db1f-34a6-437b-a75a-56a6595d6be6@5.75.202.97:19211?security=none&encryption=none&headerType=none&type=tcp#NODE-ed42598f

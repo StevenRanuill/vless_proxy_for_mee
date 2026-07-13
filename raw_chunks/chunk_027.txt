@@ -1,4 +1,3 @@
-vless://073e74f3-ae5d-425a-815d-02f369820504@www80.nowbest.cf:42922?type=grpc&security=tls&serviceName=&sni=www80.nowbest.cf&fp=chrome#NODE-eda5e6e1
 vless://ba089996-6155-4202-8982-fefcc7c7d43a@www80.nowbest.cf:18567?type=grpc&security=tls&serviceName=&sni=www80.nowbest.cf&fp=chrome#NODE-eda5e6e1
 vless://70271bed-45e7-4579-8b3d-667dc451a383@www80.nowbest.cf:14047?type=grpc&security=tls&serviceName=&sni=www80.nowbest.cf&fp=chrome#NODE-eda5e6e1
 vless://eb123cb1-ecee-42c4-c509-fedd52be15fe@AzadiIran.irov2ray.lol:2096?mode=gun&security=tls&encryption=none&type=grpc&serviceName=#NODE-0c567640
@@ -998,3 +997,4 @@ trojan://fg20mtCFHy@ustcx.southbyte.xyz:5761/?type=tcp&security=tls#NODE-10aa5cd
 trojan://BxceQaOe@38.180.191.251:443/?type=tcp&security=tls&sni=t.me%2Fripaojiedian#NODE-fda3e270
 vmess://eyJhZGQiOiIxMDcuMTcyLjgyLjQxIiwiYWlkIjoiMCIsImFscG4iOiIiLCJmcCI6IiIsImhvc3QiOiIiLCJpZCI6IjRmMzRmMjQyLWI1YTctNDhjMS1jMjU4LWYwMTliZTNiZjljNyIsIm5ldCI6IndzIiwicGF0aCI6Ii8iLCJwb3J0IjoiMTE4MTQiLCJwcyI6IvCfk584MkBvbmVjbGlja3ZwbmtleXMiLCJzY3kiOiJhdXRvIiwic25pIjoiIiwidGxzIjoidGxzIiwidHlwZSI6IiIsInYiOiIyIn0=#NODE-a346c002
 vless://a19fd311-c343-4b54-9ca3-fe6dcd84c0fc@38.47.176.134:59967/?type=tcp&encryption=none&flow=#NODE-3ba7a5b7
+trojan://H8Gwt1EIq-jxr=g#NODE-526526cd
