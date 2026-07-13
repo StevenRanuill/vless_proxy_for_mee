@@ -80,53 +80,44 @@ def make_light_client_hello(sni_domain):
     return b'\x16\x03\x01' + len(handshake_packet).to_bytes(2, 'big') + handshake_packet
 
 async def light_ping_node(semaphore, node):
-    """Экспресс-тест с фрагментацией SNI и детальной классификацией ошибок."""
+    """Быстрый экспресс-скрининг в облаке: проверка доступности TCP-порта ноды."""
     async with semaphore:
         LIGHT_STATS["scanned"] += 1
         host, port = parse_proxy_node(node)
         if not host: 
+            LIGHT_STATS["tls_empty_bad"] += 1 # Битый формат ссылки
             return None
+            
         clean_host = host.strip("[]") if host.startswith("[") else host
         
-        # 1. Проверяем базовый коннект TCP сокета
         try:
+            # Открываем чистое сетевое соединение к порту прокси
             reader, writer = await asyncio.wait_for(
-                asyncio.open_connection(clean_host, port), timeout=CONFIG["TIMEOUT_LIGHT_CHECK"]
+                asyncio.open_connection(clean_host, port), 
+                timeout=CONFIG["TIMEOUT_LIGHT_CHECK"]
             )
-        except asyncio.TimeoutError:
-            LIGHT_STATS["tcp_timeout"] += 1
-            return None
-        except Exception:
-            LIGHT_STATS["tcp_refused"] += 1
-            return None
-
-        # 2. Отправка фрагментированного TLS Client Hello (Обход ТСПУ в облаке)
-        try:
-            packet = make_light_client_hello("api.telegram.org")
-            chunk_size = 3
-            for i in range(0, len(packet), chunk_size):
-                writer.write(packet[i:i+chunk_size])
-                await writer.drain()
-                
-            # Читаем ответ сервера
-            response = await asyncio.wait_for(reader.read(1), timeout=CONFIG["TIMEOUT_LIGHT_CHECK"])
+            
+            # Порт ответил и соединение установлено успешно!
             writer.close()
             try: await writer.wait_closed()
             except: pass
             
-            if response and response[0] == 0x16:
-                LIGHT_STATS["passed"] += 1
-                return node
-            else:
-                LIGHT_STATS["tls_empty_bad"] += 1
-                return None
+            LIGHT_STATS["passed"] += 1
+            return node
+            
         except asyncio.TimeoutError:
-            # ТСПУ задропал или заморозил пакет после детекта
-            LIGHT_STATS["tspu_drop"] += 1
+            # Сервер полностью проигнорировал пакет (заблокирован или лежит)
+            LIGHT_STATS["tcp_timeout"] += 1
+            return None
+        except ConnectionRefusedError:
+            # Сервер физически активен, но порт закрыт
+            LIGHT_STATS["tcp_refused"] += 1
             return None
         except Exception:
-            LIGHT_STATS["tls_empty_bad"] += 1
+            # Любые другие сетевые сбои / дропы на ТСПУ
+            LIGHT_STATS["tspu_drop"] += 1
             return None
+
 def normalize_github_url(url):
     url = url.strip()
     if "github.com" in url and "/raw/" in url: 
