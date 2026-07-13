@@ -407,7 +407,6 @@ vless://a13df940-020c-465f-bc89-ee5279b5cd6a@173.245.59.27:443?security=tls&sni=
 vless://0ca3eb00-271b-49e0-b3c8-fe2e8ba634b8@104.21.30.22:443?security=tls&sni=freedom8.yeweroh309.workers.dev&type=ws&host=freedom8.yeweroh309.workers.dev&path=%2F&fp=chrome#NODE-4f555fa3
 vless://a13df940-020c-465f-bc89-ee5279b5cd6a@212.183.88.189:443?security=tls&sni=ld.ylks01.eu.org&type=ws&host=ld.ylks01.eu.org&path=%2F%3Fed%3D2560#NODE-c944cbb2
 vless://a13df940-020c-465f-bc89-ee5279b5cd6a@51.38.44.17:443?security=tls&sni=dy.ylks.xyz&type=ws&path=%2Fblue#NODE-c67392f6
-vless://c1fcd7eb-7d28-419c-a62f-fe3437fd884b@172.64.100.193:8443?security=tls&sni=pardazeshvpn-tg36.pages.dev&type=ws&host=pardazeshvpn-tg36.pages.dev&path=%2FTelegram%3A%40PARDAZESHVPN-Telegram%3A%40PARDAZESHVPN-Telegram%3A%40PARDAZESHVPN-Telegram%3A%40PARDAZESHVPN-Telegram%3A%40PARDAZESHVPN-Telegram%3A%40PARDAZESHVPN-Telegram%3A%40PARDAZESHVPN-Telegram%3A%40PARDAZESHVPN-Telegram%3A%40PARDAZESHVPN-Telegram%3A%40PARDAZESHVPN-Telegram%3A%40PARDAZESHVPN%3Fed%3D2048#NODE-be7fa9b7
 vless://a13df940-020c-465f-bc89-ee5279b5cd6a@190.93.244.89:443?security=tls&sni=cj.ylks.xyz&type=ws&host=cj.ylks.xyz&path=%2Fblue#NODE-ea20a7f3
 vless://6babb657-1524-43bb-b421-11bda27bc9de@172.67.88.162:2087?security=tls&sni=smart.titimoji-f6.fun&type=grpc#NODE-482f9064
 vless://a13df940-020c-465f-bc89-ee5279b5cd6a@188.114.96.231:443?security=tls&sni=ly.kpcloud.eu.org&type=ws&path=%2F%3Fed%3D2048#NODE-e3b9b73b
@@ -998,3 +997,4 @@ vless://48198295-b7ba-4b5c-8d85-085d55a6c869@190.93.247.240:443?security=tls&sni
 vless://89b3cbba-e6ac-485a-9481-976a0415eab9@172.66.47.3:443?security=tls&sni=MaHdiSeRVer-CBy.PAgES.DeV&type=ws&host=mahdIsERVER-CBy.PaGES.DeV&path=%2FVEzAZFFmaFiI2AP8%3Fed%3D2560&fp=randomized&alpn=h2,http/1.1#NODE-4a8779cf
 vless://89b3cbba-e6ac-485a-9481-976a0415eab9@104.156.81.158:443?security=tls&sni=Sanjeshp.Ir&type=ws&host=Sanjeshp.Ir&path=%2FH%3Fed%3D2560&fp=randomized&alpn=h2%2Chttp%2F1.1&allowInsecure=1#NODE-f6d090e5
 vless://0d89a36e-36bc-41d2-8bd3-bbd639991f29@103.116.7.103:2083?security=tls&sni=nicorobin.eula.cloudns.org&type=ws&path=%2F%3Fed%3D2048#NODE-60106c5b
+vless://a13df940-020c-465f-bc89-ee5279b5cd6a@198.62.62.10:443?security=tls&sni=la.ylka.us.kg&type=ws&host=la.ylka.us.kg&path=%2Fproxyip%3Dproxyip.us.fxxk.dedyn.io#NODE-af9e2ee0
