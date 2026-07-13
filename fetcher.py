@@ -192,16 +192,37 @@ def optimize_node(proxy_link):
     except: return None, None
 
 def load_and_clean_history():
+    """Загрузка истории в облаке и полная очистка записей старше 7 дней."""
     if not os.path.exists(CONFIG["HISTORY_FILE"]): return {}
     try:
-        with open(CONFIG["HISTORY_FILE"], "r", encoding="utf-8") as f: history = json.load(f)
-        now = datetime.now(); clean_history = {}; cutoff_date = now - timedelta(days=CONFIG["RETAIN_DAYS"])
-        for fp_hash, date_str in history.items():
+        with open(CONFIG["HISTORY_FILE"], "r", encoding="utf-8") as f: 
+            history = json.load(f)
+        
+        now = datetime.now()
+        clean_history = {}
+        cutoff_date = now - timedelta(days=7) # Жесткий лимит удаления: 7 дней
+        removed_count = 0
+
+        for fp_hash, data in history.items():
+            # Поддерживаем и старый формат (строка даты), и новый формат (словарь)
+            last_check_str = data["last_success"] if isinstance(data, dict) else data
             try:
-                if datetime.strptime(date_str, "%Y-%m-%d") > cutoff_date: clean_history[fp_hash] = date_str
-            except: pass
+                if datetime.strptime(last_check_str, "%Y-%m-%d") > cutoff_date:
+                    clean_history[fp_hash] = {
+                        "last_success": last_check_str,
+                        "first_seen": data.get("first_seen", last_check_str) if isinstance(data, dict) else last_check_str
+                    }
+                else:
+                    removed_count += 1
+            except:
+                removed_count += 1
+
+        if CONFIG["DEBUG_MODE"]:
+            print(f"[⚙️ ДЕБАГ] История загружена. Активных нод: {len(clean_history)}. Удалено записей без изменений (>7 дней): {removed_count}", flush=True)
         return clean_history
-    except: return {}
+    except: 
+        return {}
+
 
 def save_history(history_db):
     try:
@@ -249,13 +270,32 @@ async def async_main():
     final_pool = [node for node in check_results if node is not None]
     
     # Записываем в историю только те, что пустили дальше
+    # 🔥 ОБНОВЛЕНИЕ И ДОЗАПИСЬ ИСТОРИИ (Только прошедшие легкий SNI-тест)
     for node in final_pool:
         fp, _ = optimize_node(node)
         if fp:
             fp_hash = hashlib.md5(fp.encode()).hexdigest()
-            history_db[fp_hash] = current_date_str
+            if fp_hash in history_db:
+                # Нода уже была — обновляем дату последней успешной экспресс-проверки
+                if isinstance(history_db[fp_hash], dict):
+                    history_db[fp_hash]["last_success"] = current_date_str
+                else:
+                    # Корректно переводим старый формат строки в словарь
+                    history_db[fp_hash] = {
+                        "last_success": current_date_str,
+                        "first_seen": history_db[fp_hash]
+                    }
+            else:
+                # Абсолютно новая нода — создаем запись с двумя датами
+                history_db[fp_hash] = {
+                    "last_success": current_date_str,
+                    "first_seen": current_date_str
+                }
+                
+    # Сохраняем обновленную и очищенную базу истории
     save_history(history_db)
-        with open(CONFIG["FILE_STAGE_3"], "w", encoding="utf-8") as f:
+
+    with open(CONFIG["FILE_STAGE_3"], "w", encoding="utf-8") as f:
         f.write("\n".join(final_pool))
         
     print("\n" + "="*50)
@@ -266,10 +306,8 @@ async def async_main():
     print("="*50 + "\n")
             
     if os.path.exists(CONFIG["CHUNKS_DIR"]):
-        try:
-            shutil.rmtree(CONFIG["CHUNKS_DIR"])
-        except:
-            pass
+        try: shutil.rmtree(CONFIG["CHUNKS_DIR"])
+        except: pass
     os.makedirs(CONFIG["CHUNKS_DIR"], exist_ok=True)
     
     if not final_pool:
