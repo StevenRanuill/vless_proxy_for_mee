@@ -51,7 +51,7 @@ jobs:
   test-data:
     needs: gather-data
     runs-on: self-hosted
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
       # ИСПРАВЛЕНО: Кулдаун сети и жесткий pull свежих чанков из репозитория
       - name: Hard Reset Network State and Pull Data
