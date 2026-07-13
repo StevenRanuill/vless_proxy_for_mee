@@ -28,7 +28,7 @@ jobs:
         run: mkdir -p logs core subs
 
       - name: Run Fetcher Script
-        run: python fetcher.py
+        run: python -u fetcher.py
 
       # ИСПРАВЛЕНО: Вместо артефактов пушим чанки прямо в ветку
       - name: Push Raw Chunks to Repository
