@@ -28,7 +28,16 @@ jobs:
         run: mkdir -p logs core subs
 
       - name: Run Fetcher Script
-        run: python -u fetcher.py
+        env:
+          PYTHONUNBUFFERED: "1"
+        # Перенаправляем все скрытые ошибки Linux в файл error.txt
+        run: |
+          python fetcher.py > logs/fetcher_stdout.log 2> logs/fetcher_stderr.err || true
+          echo "=== СОДЕРЖИМОЕ СТАНДАРТНОГО ВЫВОДА ==="
+          cat logs/fetcher_stdout.log
+          echo "=== СОДЕРЖИМОЕ КРИТИЧЕСКИХ ОШИБОК (STDERR) ==="
+          cat logs/fetcher_stderr.err
+
 
       # ИСПРАВЛЕНО: Вместо артефактов пушим чанки прямо в ветку
       - name: Push Raw Chunks to Repository
