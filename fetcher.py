@@ -253,5 +253,5 @@ async def async_main():
             f.write("\n".join(final_pool[i:i + chunk_size]))
     print(f"Нарезано пачек по {chunk_size} нод: {chunk_num}")
 
-if __name__ == '__main__':
-    asyncio.run(async_main())
+# if __name__ == '__main__':
+#    asyncio.run(async_main())
