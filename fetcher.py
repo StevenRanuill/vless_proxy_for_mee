@@ -11,6 +11,7 @@ from datetime import datetime, timedelta  # ИСПРАВЛЕНО: Добавле
 
 # Заглушка конфигурации (подставьте ваши реальные значения)
 CONFIG = {
+    "DEBUG_MODE": True,
     # ИСПРАВЛЕНО: Добавлено ?:, чтобы re.findall возвращал ВСЮ строку прокси целиком, а не только имя протокола
     "PROXY_REGEX": r"(?:vless|vmess|ss|trojan|hysteria2|tuic)://[^\s\"']+",
     
@@ -71,18 +72,24 @@ ELITE_SUBSCRIPTIONS = [
     "https://etoneya.su/whitelist"    
 ]
 
+def log_debug(message):
+    """Вывод отладочных сообщений, если включен DEBUG_MODE."""
+    if CONFIG["DEBUG_MODE"]:
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"[⚙️ ДЕБАГ {timestamp}] {message}")
+
 def normalize_github_url(url):
     url = url.strip()
-    if "github.com" in url and "/raw/" in url: url = url.replace("github.com", "githubusercontent.com").replace("/raw/", "/")
-    elif "github.com" in url and "/blob/" in url: url = url.replace("github.com", "githubusercontent.com").replace("/blob/", "/")
+    if "github.com" in url and "/raw/" in url:
+        url = url.replace("github.com", "githubusercontent.com").replace("/raw/", "/")
+    elif "github.com" in url and "/blob/" in url:
+        url = url.replace("github.com", "githubusercontent.com").replace("/blob/", "/")
     return url
-    
+
 def clean_and_extract(raw_text, url_source=""):
-    # Шаг 1: Декодируем HTML-сущности и приводим к строке
     unescaped = html.unescape(raw_text)
     
-    # Шаг 2: Если это Base64 подписка (одна сплошная строка), пробуем декодировать
-    if "://" not in unescaped[:200]:  # Если в начале нет явных протоколов
+    if "://" not in unescaped[:200]:  
         try:
             b64_clean = "".join(unescaped.split())
             b64_clean = re.sub(r'[^A-Za-z0-9+/=]', '', b64_clean)
@@ -93,24 +100,18 @@ def clean_and_extract(raw_text, url_source=""):
         except:
             pass
 
-    # Шаг 3: Построчный разбор текста (Универсальный обход re.findall)
     sanitized = []
-    # Разбиваем текст по любым разделителям: переносы строк, пробелы, кавычки
     raw_lines = re.split(r'[\s"\'\(\)\{\}\[\]\t\r\n]+', unescaped)
-    
-    # Список поддерживаемых протоколов
     valid_protocols = ('vless://', 'vmess://', 'ss://', 'trojan://', 'hysteria2://', 'tuic://', 'shadowsocks://')
 
     for line in raw_lines:
         line_clean = line.strip()
         if line_clean.startswith(valid_protocols):
-            # Нормализуем устаревший shadowsocks
             if line_clean.startswith("shadowsocks://"):
                 line_clean = line_clean.replace("shadowsocks://", "ss://", 1)
-                
             sanitized.append(line_clean)
             
-    print(f"[РЕЗУЛЬТАТ] Из {url_source} извлечено нод: {len(sanitized)}")
+    log_debug(f"Извлечено из источника {url_source}: {len(sanitized)} нод.")
     return sanitized
 
 async def fetch_source(semaphore, session, url):
@@ -121,9 +122,8 @@ async def fetch_source(semaphore, session, url):
             async with session.get(norm_url, headers=headers, timeout=15) as response:
                 if response.status == 200:
                     text_content = await response.text(errors='ignore')
-                    # Если файл огромный, сообщаем об этом
                     if len(text_content) > CONFIG["MAX_FILE_SIZE"]:
-                        print(f"[ОШИБКА] Файл {norm_url} слишком большой ({len(text_content)} байт) и превысил лимит.")
+                        print(f"[ОШИБКА] Файл {norm_url} превысил лимит размера.")
                         return []
                     return clean_and_extract(text_content, norm_url)
                 else:
@@ -132,23 +132,19 @@ async def fetch_source(semaphore, session, url):
             print(f"[СБОЙ СОЕДИНЕНИЯ] Не удалось подключиться к {norm_url}: {e}")
         return []
 
-
-
 def optimize_node(proxy_link):
-    """ИСПРАВЛЕНО: Генерация отпечатка без разрушения структуры исходной ссылки."""
     try:
         node_str = proxy_link.strip().replace('&amp;', '&')
         if "://" not in node_str: return None, None
         scheme, body = node_str.split("://", 1)
         
-        # Сохраняем чистую копию тела для последующей пересборки
-        original_body = body
-        
-        query_part = ""
-        if "#" in body: body, _ = body.split("#", 1)
-        if "?" in body: body, query_part = body.split("?", 1)
-        if "@" in body: _, server_part = body.split("@", 1)
-        else: server_part = body
+        if "#" in body: body_clear, _ = body.split("#", 1)
+        else: body_clear = body
+            
+        temp_body = body_clear
+        if "?" in temp_body: temp_body, _ = temp_body.split("?", 1)
+        if "@" in temp_body: _, server_part = temp_body.split("@", 1)
+        else: server_part = temp_body
 
         if server_part.startswith("["):
             if "]" in server_part:
@@ -167,12 +163,7 @@ def optimize_node(proxy_link):
             
         fingerprint = f"{host}:{port}"
         node_hash = hashlib.md5(host.encode()).hexdigest()[:8]
-        
-        # Отрезаем старый тег (имя ноды после #) из оригинального тела, если он там был
-        body_no_tag = original_body.split("#")[0]
-        
-        # Пересобираем ноду: схема + все авторизационные данные и параметры + наш хеш-тег
-        cleaned_node = f"{scheme}://{body_no_tag}#NODE-{node_hash}"
+        cleaned_node = f"{scheme}://{body_clear}#NODE-{node_hash}"
         return fingerprint, cleaned_node
     except:
         return None, None
@@ -184,13 +175,20 @@ def load_and_clean_history():
         now = datetime.now()
         clean_history = {}
         cutoff_date = now - timedelta(days=CONFIG["RETAIN_DAYS"])
+        
+        initial_count = len(history)
         for fp_hash, date_str in history.items():
             try:
                 if datetime.strptime(date_str, "%Y-%m-%d") > cutoff_date: 
                     clean_history[fp_hash] = date_str
             except: pass
+            
+        removed = initial_count - len(clean_history)
+        log_debug(f"Загружена история. Всего меток: {initial_count}. Удалено по ротации (> {CONFIG['RETAIN_DAYS']} дн.): {removed}")
         return clean_history
-    except: return {}
+    except: 
+        print("[ОШИБКА] Не удалось прочитать файл истории блеклиста.")
+        return {}
 
 def save_history(history_db):
     try:
@@ -200,9 +198,14 @@ def save_history(history_db):
     except: pass
 
 async def async_main():
+    if not ELITE_SUBSCRIPTIONS:
+        print("[КРИТИЧЕСКАЯ ОШИБКА] Массив ELITE_SUBSCRIPTIONS пуст!")
+        return
+
     history_db = load_and_clean_history()
     stage_1_list = []
     
+    print(f"[СТАРТ] Опрос источников. Всего в списке: {len(ELITE_SUBSCRIPTIONS)}")
     semaphore = asyncio.Semaphore(CONFIG["MAX_CONCURRENT_FETCH"])
     async with aiohttp.ClientSession() as session:
         tasks = [fetch_source(semaphore, session, url) for url in ELITE_SUBSCRIPTIONS]
@@ -212,46 +215,78 @@ async def async_main():
             
     os.makedirs("logs", exist_ok=True)
     with open(CONFIG["FILE_STAGE_1"], "w", encoding="utf-8") as f: f.write("\n".join(stage_1_list))
-    print(f"Шаг 1 выполнен. Всего скачано нод: {len(stage_1_list)}")
+    
+    # МЕТРИКИ ШАГА 1
+    total_downloaded = len(stage_1_list)
+    print(f"📊 [ШАГ 1] Всего сырых записей скачано: {total_downloaded}")
             
     seen_fps = set()
     stage_2_list = []
     final_pool = []
     current_date_str = datetime.now().strftime("%Y-%m-%d")
     
+    # Счетчики для отладки фильтрации
+    dup_filtered = 0
+    history_filtered = 0
+    invalid_filtered = 0
+    
     for node in stage_1_list:
         fp, clean_node = optimize_node(node)
-        if fp and fp not in seen_fps:
-            seen_fps.add(fp)
-            stage_2_list.append(clean_node)
+        if not fp:
+            invalid_filtered += 1
+            continue
             
-            fp_hash = hashlib.md5(fp.encode()).hexdigest()
+        if fp in seen_fps:
+            dup_filtered += 1
+            continue
             
-            if fp_hash not in history_db or history_db[fp_hash] != current_date_str:
-                final_pool.append(clean_node)
-                history_db[fp_hash] = current_date_str
+        seen_fps.add(fp)
+        stage_2_list.append(clean_node)
+        
+        fp_hash = hashlib.md5(fp.encode()).hexdigest()
+        
+        # Проверка по блеклисту истории (чекались ли сегодня)
+        if fp_hash in history_db and history_db[fp_hash] == current_date_str:
+            history_filtered += 1
+        else:
+            final_pool.append(clean_node)
+            history_db[fp_hash] = current_date_str
                 
     save_history(history_db)
                 
     with open(CONFIG["FILE_STAGE_2"], "w", encoding="utf-8") as f: f.write("\n".join(stage_2_list))
     with open(CONFIG["FILE_STAGE_3"], "w", encoding="utf-8") as f: f.write("\n".join(final_pool))
     
-    print(f"Шаг 2 выполнен. Уникальных: {len(stage_2_list)}. Шаг 3 выполнен. К проверке: {len(final_pool)}")
+    # ИТОГОВЫЙ ОТЧЕТ СТАТИСТИКИ ФИЛЬТРАЦИИ ДЛЯ БИЛДА
+    print("\n" + "="*50)
+    print("📈 ИТОГОВЫЙ ОТЧЕТ ИНКРЕМЕНТАЛЬНОЙ ФИЛЬТРАЦИИ:")
+    print(f"  📥 Всего получено строк (Шаг 1):        {total_downloaded}")
+    print(f"  ❌ Отфильтровано битых/невалидных ссылок: {invalid_filtered}")
+    print(f"  ❌ Отфильтровано дубликатов (Шаг 2):     {dup_filtered}")
+    print(f"  ❌ Отфильтровано историей (уже чекались сегодня): {history_filtered}")
+    print(f"  🚀 Итого отправлено в пул проверки (Шаг 3): {len(final_pool)}")
+    print("="*50 + "\n")
             
-    if os.path.exists(CONFIG["CHUNKS_DIR"]): shutil.rmtree(CONFIG["CHUNKS_DIR"])
+    if os.path.exists(CONFIG["CHUNKS_DIR"]): 
+        try: shutil.rmtree(CONFIG["CHUNKS_DIR"])
+        except: pass
     os.makedirs(CONFIG["CHUNKS_DIR"], exist_ok=True)
     
     if not final_pool:
-        with open(os.path.join(CONFIG["CHUNKS_DIR"], "chunk_empty.txt"), "w", encoding="utf-8") as f: f.write("")
-        return
-
-    chunk_size = CONFIG["CHUNK_SIZE"]
-    chunk_num = 0
-    for i in range(0, len(final_pool), chunk_size):
-        chunk_num = (i // chunk_size) + 1
-        with open(os.path.join(CONFIG["CHUNKS_DIR"], f"chunk_{chunk_num}.txt"), "w", encoding="utf-8") as f:
-            f.write("\n".join(final_pool[i:i + chunk_size]))
-    print(f"Нарезано пачек по {chunk_size} нод: {chunk_num}")
+        log_debug("Пул проверки пуст. Создаем пустой маркер-чанк.")
+        with open(os.path.join(CONFIG["CHUNKS_DIR"], "chunk_empty.txt"), "w", encoding="utf-8") as f:
+            f.write("")
+    else:
+        # Корректная нарезка пула на чанки по CHUNK_SIZE строк
+        chunk_size = CONFIG["CHUNK_SIZE"]
+        chunks = [final_pool[i:i + chunk_size] for i in range(0, len(final_pool), chunk_size)]
+        log_debug(f"Нарезка пула. Всего будет создано чанков: {len(chunks)}")
+        
+        for idx, chunk in enumerate(chunks, 1):
+            chunk_file = os.path.join(CONFIG["CHUNKS_DIR"], f"chunk_{idx:03d}.txt")
+            with open(chunk_file, "w", encoding="utf-8") as f:
+                f.write("\n".join(chunk))
+        log_debug("Все чанки успешно нарезаны и сохранены.")
 
 # if __name__ == '__main__':
 #    asyncio.run(async_main())
