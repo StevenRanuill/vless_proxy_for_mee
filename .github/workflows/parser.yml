@@ -1,41 +1,67 @@
-name: Skibidi_tualet_proxy
+name: Incremental_Xray_Parser_Workflow
 on:
   schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch:
+    - cron: '0 0 * * *' # Автоматический запуск каждый день в полночь
+  workflow_dispatch: # Возможность ручного запуска кнопкой
 
 permissions:
   contents: write
+  actions: write # Важно: даем права на принудительную отмену/убийство процесса воркфлоу
 
 jobs:
+  # ЭТАП 0: Проверка доступности домашнего ПК и аварийный стоп
+  check-runner:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Self-Hosted Runner Status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Запрашиваем статус локального раннера через GitHub API..."
+          
+          # Получаем статус self-hosted раннера
+          STATUS=$(gh api repos/${{ github.repository }}/actions/runners --jq '.runners[] | select(.labels[].name == "self-hosted") | .status' | head -n 1)
+          
+          if [ -z "$STATUS" ]; then
+            STATUS="offline"
+          fi
+          
+          echo "Текущий статус раннера: $STATUS"
+          
+          if [ "$STATUS" = "offline" ]; then
+            echo "[АВАРИЙНЫЙ ВЫХОД] Домашний ПК выключен. Убиваем текущий процесс воркфлоу..."
+            # Используем встроенный GitHub CLI для отмены текущего запуска (ID: ${{ github.run_id }})
+            gh run cancel ${{ github.run_id }}
+            
+            # Небольшая пауза, чтобы GitHub успел обработать сигнал отмены
+            sleep 10
+            exit 1
+          fi
+
+  # ЭТАП 1: Сбор данных в облаке (Запустится только если ПК прошел проверку)
   gather-data:
+    needs: check-runner
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Install Dependencies for Fetcher
         run: |
           python -m pip install --upgrade pip
           python -m pip install aiohttp
-
-      # КРИТИЧЕСКИЙ ФИКС: Принудительно чистим логи и чанки перед новым нарезанием в облаке
       - name: Create Structure Directories
         run: |
           rm -rf logs/*
           rm -rf raw_chunks/*
           mkdir -p logs core subs raw_chunks
-
       - name: Run Fetcher & Light Check
         env:
           PYTHONUNBUFFERED: "1"
         run: python -u fetcher.py
-
       - name: Push Raw Chunks to Repository
         run: |
           git config --local user.email "actions@github.com"
@@ -44,51 +70,49 @@ jobs:
           git commit --allow-empty -m "Deploy fresh pre-filtered chunks [skip ci]"
           git push origin main
 
+  # ЭТАП 2: Основательная поблочная проверка на домашнем ПК
   test-data:
     needs: gather-data
     runs-on: self-hosted
-    timeout-minutes: 60   
+    timeout-minutes: 60 
     steps:
       - name: Hard Reset Network State and Pull Data
         shell: cmd
         run: |
-          ping 127.0.0.1 -n 16 >nul
           ipconfig /flushdns
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           git reset --hard origin/main
           git pull origin main
 
-      # КРИТИЧЕСКИЙ ФИКС: Запуск чекера ИНДИВИДУАЛЬНО НА КАЖДЫЙ файл чанка через Windows CMD цикл
-# parser.yml
-      - name: Run Deep Checker File by File
+      - name: Run Deep Checker Script File by File
         shell: cmd
         env:
           PYTHONIOENCODING: utf-8
           PYTHONUNBUFFERED: "1"
-          XRAY_PATH: "C:\Proxy\Xray\xray.exe" # <-- Указываете точный путь на вашем ПК тут
         run: |
           chcp 65001
           if not exist subs mkdir subs
+          
+          echo === Начинаем пофайловый обход чанков через Xray Core ===
           for %%F in (raw_chunks\chunk_*.txt) do (
+              echo --------------------------------------------------
+              echo [ПРОЦЕСС] Обработка файла: %%F
+              
+              :: Выполнение строго по вашему системному пути из контекста
               python -u "C:\Proxy\vless_proxy_for_mee\checker.py" --file "%%F"
+              
               ping 127.0.0.1 -n 3 >nul
           )
 
-        continue-on-error: true
-
       - name: Sync sub-files back to GitHub
         shell: cmd
-        env:
-          PYTHONIOENCODING: utf-8
         run: |
-          ping 127.0.0.1 -n 16 >nul
           ipconfig /flushdns
           git config --global http.lowSpeedLimit 0
           git config --global http.lowSpeedTime 999999
           if exist subs git add subs/
           if exist logs git add logs/
           if exist core git add core/
-          git status
           git commit --allow-empty -m "Auto-update deep-checked structured files including my_sub [skip ci]"
-          git push origin main || (ping 127.0.0.1 -n 10 >nul && ipconfig /flushdns && git push origin main)
+          git push origin main
