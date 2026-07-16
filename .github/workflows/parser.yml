@@ -106,6 +106,13 @@ jobs:
           if not exist subs mkdir subs
           if not exist logs mkdir logs
           if not exist raw_chunks mkdir raw_chunks
+           
+      - name: Install local python dependencies
+        shell: cmd
+        run: |
+          cd C:\actions-runner\_work\vless_proxy_for_mee\vless_proxy_for_mee
+          ".\pythoncore-3.14-64\python.exe" -m pip install --upgrade pip
+          ".\pythoncore-3.14-64\python.exe" -m pip install grpcio grpcio-tools aiohttp
 
       - name: Run checker
         shell: cmd
