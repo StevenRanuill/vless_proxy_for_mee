@@ -1,4 +1,4 @@
-name: Incremental_Xray_Parser_Workflow
+name: Skibidi_tualet_proxy
 on:
   schedule:
     - cron: '0 0 * * *' # Автоматический запуск каждый день в полночь
