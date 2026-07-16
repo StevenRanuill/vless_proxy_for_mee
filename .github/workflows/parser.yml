@@ -65,19 +65,11 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 60
     steps:
-      - name: Fix Git safe.directory (PowerShell)
-        shell: powershell
-        run: |
-          Write-Host "=== Исправление Git безопасной директории ==="
-          git config --global --add safe.directory "*"
-          git config --global protocol.file.allow always
-          Write-Host "Текущие настройки Git:"
-          git config --global --list | Select-String "safe"
-      
       - name: Kill stale Xray processes
         shell: cmd
         run: |
           echo === Очистка висящих Xray процессов ===
+          git config --global --add safe.directory "*"
           taskkill /F /IM xray.exe 2>nul || echo Нет активных Xray процессов
           echo Очистка завершена
       
@@ -97,6 +89,7 @@ jobs:
         shell: cmd
         run: |
           echo === Создание директорий ===
+          git config --global --add safe.directory "*"
           if not exist subs mkdir subs
           if not exist logs mkdir logs
           if not exist raw_chunks mkdir raw_chunks
@@ -135,6 +128,6 @@ jobs:
         if: always()
         run: |
           echo === Удаление отработанных чанков ===
+          git config --global --add safe.directory "*"
           if exist raw_chunks del /q raw_chunks\* 2>nul
           echo === Локальный ПК очищен! ===
-          
