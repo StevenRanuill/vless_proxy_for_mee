@@ -65,13 +65,15 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 60
     steps:
-      - name: Kill stale Xray processes
+      - name: Fix Git safe.directory (Global)
         shell: cmd
         run: |
-          echo === Очистка висящих Xray процессов ===
+          echo === Глобальное исправление Git безопасной директории ===
           git config --global --add safe.directory "*"
-          taskkill /F /IM xray.exe 2>nul || echo Нет активных Xray процессов
-          echo Очистка завершена
+          git config --global --add safe.directory "C:/actions-runner/_work/vless_proxy_for_mee/vless_proxy_for_mee"
+          echo Текущие настройки Git:
+          git config --global --list | findstr safe
+          echo Готово
       
       - name: Hard Reset and Pull
         shell: cmd
