@@ -11,7 +11,9 @@ import aiohttp
 from datetime import datetime, timedelta
 
 CONFIG = {
-    "PROXY_REGEX": r"(?:vless|vmess|ss|trojan|hysteria2|tuic)://[^\s\"']+",
+    # В файле fetcher.py замените строчку в CONFIG:
+    "PROXY_REGEX": r"vless:\/\/[^\s\(\)\"]+",
+
     
     # 🔥 РЕЖИМ ОТЛАДКИ ВКЛЮЧЕН ПО ДЕФОЛТУ
     "DEBUG_MODE": True,
