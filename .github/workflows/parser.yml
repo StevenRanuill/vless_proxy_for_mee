@@ -77,9 +77,6 @@ jobs:
         run: |
           echo === Очистка висящих Xray процессов ===
           taskkill /F /IM xray.exe 2>nul || echo Нет активных Xray процессов
-          for /f "tokens=5" %%a in ('netstat -ano ^| findstr 50051') do taskkill /F /PID %%a 2>nul || echo Порт 50051 свободен
-          for /f "tokens=5" %%a in ('netstat -ano ^| findstr 10001') do taskkill /F /PID %%a 2>nul || echo Порт 10001 свободен
-          timeout /t 2 /nobreak >nul
           echo Очистка завершена
       
       - name: Hard Reset and Pull
@@ -136,3 +133,4 @@ jobs:
           echo === Удаление отработанных чанков ===
           if exist raw_chunks del /q raw_chunks\* 2>nul
           echo === Локальный ПК очищен! ===
+          
