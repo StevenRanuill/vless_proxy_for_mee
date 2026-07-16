@@ -108,11 +108,30 @@ jobs:
       - name: Sync sub-files back to GitHub
         shell: cmd
         run: |
-          ipconfig /flushdns
-          git config --global http.lowSpeedLimit 0
-          git config --global http.lowSpeedTime 999999
+          echo === Очистка зависшего сетевого стека Windows ===
+          ipconfig /flushdns >nul 2>&1
+          
+          echo === Сброс старых тормозящих настроек Git ===
+          :: Сбрасываем бесконечные таймауты, которые заставляли пуш зависать
+          git config --global --unset http.lowSpeedLimit || true
+          git config --global --unset http.lowSpeedTime || true
+          
+          :: Настраиваем жесткий и быстрый лимит: если пуш тупит дольше 15 секунд - перезапустить
+          git config --global http.lowSpeedLimit 1000
+          git config --global http.lowSpeedTime 15
+          
+          :: Отключаем буферизацию (актуально для Windows раннеров)
+          git config --global http.postBuffer 524288000
+          git config --global core.compression 0
+          
+          echo === Добавление файлов и коммит ===
           if exist subs git add subs/
           if exist logs git add logs/
           if exist core git add core/
+          
           git commit --allow-empty -m "Auto-update deep-checked structured files including my_sub [skip ci]"
-          git push origin main
+          
+          echo === Быстрый пуш в репозиторий ===
+          :: Флаг --quiet отключает отрисовку логов, что экономит кучу времени в Windows CLI
+          git push --quiet origin main
+
