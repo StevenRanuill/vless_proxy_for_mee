@@ -83,6 +83,8 @@ jobs:
             echo "No Xray processes found"
           )
           echo "=== Done ==="
+          ver >nul
+
 
 
       - name: Reset and pull repository
