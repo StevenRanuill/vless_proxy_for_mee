@@ -10,9 +10,6 @@ permissions:
   actions: write
 
 jobs:
-  # ========================================
-  # JOB 1: Проверка статуса раннера (облако)
-  # ========================================
   check-runner:
     runs-on: ubuntu-latest
     steps:
@@ -20,12 +17,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Проверка статуса self-hosted раннера..."
+          echo "Проверка статуса раннера..."
           STATUS=$(gh api repos/${{ github.repository }}/actions/runners --jq '.runners[] | select(.labels[].name == "self-hosted") | .status' | head -n 1)
           if [ -z "$STATUS" ]; then
             STATUS="offline"
           fi
-          echo "Статус раннера: $STATUS"
+          echo "Статус: $STATUS"
           if [ "$STATUS" = "offline" ]; then
             echo "Раннер оффлайн! Отменяем workflow..."
             gh run cancel ${{ github.run_id }}
@@ -33,37 +30,29 @@ jobs:
             exit 1
           fi
 
-  # ========================================
-  # JOB 2: Сбор данных в облаке
-  # ========================================
   gather-data:
     needs: check-runner
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install aiohttp
-
       - name: Clean old data
         run: |
-          rm -rf raw_chunks/* logs/* core/*
+          rm -rf raw_chunks/* logs/*
           mkdir -p logs core subs raw_chunks
-
       - name: Run fetcher
         env:
           PYTHONUNBUFFERED: "1"
         run: python -u fetcher.py
-
-      - name: Push chunks to repository
+      - name: Push chunks
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
@@ -71,9 +60,6 @@ jobs:
           git commit --allow-empty -m "Deploy fresh chunks [skip ci]" || echo "No changes"
           git push origin main
 
-  # ========================================
-  # JOB 3: Проверка на локальном ПК
-  # ========================================
   test-data:
     needs: gather-data
     runs-on: self-hosted
@@ -152,3 +138,4 @@ jobs:
           cd C:\actions-runner\_work\vless_proxy_for_mee\vless_proxy_for_mee
           if exist raw_chunks del /q raw_chunks\* 2>nul
           echo "=== Done ==="
+        
