@@ -118,19 +118,23 @@ jobs:
         shell: cmd
         run: |
           cd C:\actions-runner\_work\vless_proxy_for_mee\vless_proxy_for_mee
-          chcp 65001 >nul
           
-          @rem Копируем файлы баз данных гео-локации из папки Xray в корень, 
-          @rem чтобы ядра Xray видели их при любом контексте вызова в Windows
-          if exist Xray\geoip.dat copy Xray\geoip.dat . /Y
-          if exist Xray\geosite.dat copy Xray\geosite.dat . /Y
-          if exist Xray\xray.exe copy Xray\xray.exe . /Y
+          @rem 1. ГАРАНТИРОВАННО СТАВИМ UTF-8 ДЛЯ ВСЕЙ СЕССИИ CMD
+          chcp 65001 >nul
+          set PYTHONIOENCODING=utf-8
+          set PYTHONUNBUFFERED=1
+          
+          echo "=== Подготовка окружения Xray ==="
+          if exist Xray\geoip.dat copy Xray\geoip.dat . /Y >nul
+          if exist Xray\geosite.dat copy Xray\geosite.dat . /Y >nul
+          if exist Xray\xray.exe copy Xray\xray.exe . /Y >nul
 
-          echo "=== Run Multi-Process Checker ==="
+          echo "=== Запуск мультипроцессорного чекера ==="
           for %%F in (raw_chunks\chunk_*.txt) do (
-            echo Processing: %%F
+            echo Проверка файла: %%F
             ".\pythoncore-3.14-64\python.exe" -u "checker.py" --file "%%F"
           )
+
 
 
 
