@@ -121,12 +121,18 @@ jobs:
           echo "=== Sync results ==="
           cd C:\actions-runner\_work\vless_proxy_for_mee\vless_proxy_for_mee
           git config --global --add safe.directory "*"
+          
+          @rem Скачиваем свежие изменения, если они были
           git pull origin main --rebase || git pull origin main
-          if exist subs git add subs/ || echo "No subs"
-          if exist logs git add logs/ || echo "No logs"
-          if exist core git add core/ || echo "No core"
+          
+          @rem Добавляем строго текстовые файлы из нужных папок
+          if exist subs git add subs\*.txt || echo "No subs"
+          if exist logs git add logs\*.txt || echo "No logs"
+          if exist core git add core\*.json || echo "No core"
+          
           git commit --allow-empty -m "Auto-update checked subs [skip ci]" || echo "No changes"
-          git push https://x-access-token:%GITHUB_TOKEN%@github.com/${{ github.repository }}.git main --force-with-lease
+          git push https://x-access-token:%GITHUB_TOKEN%@://github.com{{ github.repository }}.git main --force-with-lease
+
 
       - name: Post-run cleanup
         shell: cmd
