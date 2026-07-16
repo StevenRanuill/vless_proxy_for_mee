@@ -9,7 +9,10 @@ permissions:
   contents: write
   actions: write
 
-jobs:        
+jobs:
+  # ========================================
+  # JOB 1: Проверка статуса раннера (облако)
+  # ========================================
   check-runner:
     runs-on: ubuntu-latest
     steps:
@@ -17,49 +20,60 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Запрашиваем статус локального раннера..."
+          echo "Проверка статуса self-hosted раннера..."
           STATUS=$(gh api repos/${{ github.repository }}/actions/runners --jq '.runners[] | select(.labels[].name == "self-hosted") | .status' | head -n 1)
           if [ -z "$STATUS" ]; then
             STATUS="offline"
           fi
-          echo "Текущий статус раннера: $STATUS"
+          echo "Статус раннера: $STATUS"
           if [ "$STATUS" = "offline" ]; then
-            echo "[АВАРИЙНЫЙ ВЫХОД] Домашний ПК выключен."
+            echo "Раннер оффлайн! Отменяем workflow..."
             gh run cancel ${{ github.run_id }}
             sleep 10
             exit 1
           fi
 
+  # ========================================
+  # JOB 2: Сбор данных в облаке
+  # ========================================
   gather-data:
     needs: check-runner
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install Dependencies
+
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install aiohttp
-      - name: Clean Old Chunks
+
+      - name: Clean old data
         run: |
-          rm -rf raw_chunks/* logs/*
+          rm -rf raw_chunks/* logs/* core/*
           mkdir -p logs core subs raw_chunks
-      - name: Run Fetcher
+
+      - name: Run fetcher
         env:
           PYTHONUNBUFFERED: "1"
         run: python -u fetcher.py
-      - name: Push Raw Chunks
+
+      - name: Push chunks to repository
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           git add raw_chunks/* logs/* core/* || true
-          git commit --allow-empty -m "Deploy fresh pre-filtered chunks [skip ci]"
+          git commit --allow-empty -m "Deploy fresh chunks [skip ci]" || echo "No changes"
           git push origin main
 
+  # ========================================
+  # JOB 3: Проверка на локальном ПК
+  # ========================================
   test-data:
     needs: gather-data
     runs-on: self-hosted
@@ -67,24 +81,30 @@ jobs:
     steps:
       - name: Fix Git safe.directory
         shell: cmd
-        run: |  
+        run: |
+          echo "=== Fix Git safe.directory ==="
           git config --global --add safe.directory "*"
           git config --global --add safe.directory "C:/actions-runner/_work/vless_proxy_for_mee/vless_proxy_for_mee"
+          echo "=== Done ==="
 
       - name: Kill stale Xray processes
         shell: cmd
         run: |
-          taskkill /F /IM xray.exe 2>nul || echo OK
+          echo "=== Kill Xray ==="
+          taskkill /F /IM xray.exe 2>nul || echo "No Xray processes"
+          echo "=== Done ==="
 
-      - name: Hard Reset and Pull
+      - name: Reset and pull repository
         shell: cmd
         run: |
+          echo "=== Git reset ==="
           cd C:\actions-runner\_work\vless_proxy_for_mee\vless_proxy_for_mee
           git config --global --add safe.directory "*"
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           git reset --hard origin/main
           git pull origin main
+          echo "=== Done ==="
 
       - name: Create directories
         shell: cmd
@@ -94,7 +114,7 @@ jobs:
           if not exist logs mkdir logs
           if not exist raw_chunks mkdir raw_chunks
 
-      - name: Run Checker
+      - name: Run checker
         shell: cmd
         env:
           PYTHONIOENCODING: utf-8
@@ -102,29 +122,33 @@ jobs:
         run: |
           cd C:\actions-runner\_work\vless_proxy_for_mee\vless_proxy_for_mee
           chcp 65001 >nul
+          echo "=== Run checker ==="
           for %%F in (raw_chunks\chunk_*.txt) do (
-            echo [ПРОЦЕСС] %%F
+            echo "Processing: %%F"
             "C:\pythoncore-3.14-64\python.exe" -u "C:\Proxy\vless_proxy_for_mee\checker.py" --file "%%F"
             ping 127.0.0.1 -n 3 >nul
           )
 
-      - name: Sync sub-files back
+      - name: Sync results back
         shell: cmd
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          echo "=== Sync results ==="
           cd C:\actions-runner\_work\vless_proxy_for_mee\vless_proxy_for_mee
           git config --global --add safe.directory "*"
           git pull origin main --rebase || git pull origin main
-          if exist subs git add subs/
-          if exist logs git add logs/
-          if exist core git add core/
-          git commit --allow-empty -m "Auto-update [skip ci]"
+          if exist subs git add subs/ || echo "No subs"
+          if exist logs git add logs/ || echo "No logs"
+          if exist core git add core/ || echo "No core"
+          git commit --allow-empty -m "Auto-update checked subs [skip ci]" || echo "No changes"
           git push https://x-access-token:%GITHUB_TOKEN%@github.com/${{ github.repository }}.git main --force-with-lease
 
-      - name: Post-Run Clean
+      - name: Post-run cleanup
         shell: cmd
         if: always()
         run: |
+          echo "=== Cleanup ==="
           cd C:\actions-runner\_work\vless_proxy_for_mee\vless_proxy_for_mee
           if exist raw_chunks del /q raw_chunks\* 2>nul
+          echo "=== Done ==="
