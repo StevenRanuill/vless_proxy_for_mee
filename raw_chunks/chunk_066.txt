@@ -132,7 +132,6 @@ vmess://eyJhZGQiOiJ4c2owMDQtMTAuZmFjYWkyMDI0LmNvbSIsImFpZCI6IjAiLCJob3N0IjoieHNq
 vmess://eyJ2IjoiMiIsInBzIjoiXHVkODNjXHVkZGZhXHVkODNjXHVkZGY4W29wZW5wcm94eWxpc3QuY29tXSB2bWVzcy1VUyIsImFkZCI6IjEwNy4xNjEuODIuODkiLCJwb3J0IjoiNTk5MTIiLCJpZCI6ImJkYTYxOWI2LWM1ZTctNDQ0YS1hZWQ3LTRkODcxNjIzN2JkNyIsImFpZCI6IjAiLCJzY3kiOiJhdXRvIiwibmV0Ijoid3MiLCJ0eXBlIjoibm9uZSIsImhvc3QiOiIiLCJwYXRoIjoiXC9hcmtpIiwidGxzIjoibm9uZSIsInNuaSI6IiIsInRlc3RfbmFtZSI6IjM1Iiwic2tpcC1jZXJ0LXZlcmlmeSI6dHJ1ZX0=#NODE-56eb4eab
 vmess://eyJhZGQiOiIzMS43Ny4xNDkuMTMxIiwiYWlkIjoiMCIsImFscG4iOiIiLCJmcCI6IiIsImhvc3QiOiIiLCJpZCI6IjVlZDcyMDZhLWNkOGQtNGIwMi1hZGQxLTRmN2I3ODcxNzhjOSIsIm5ldCI6InRjcCIsInBhdGgiOiIiLCJwb3J0IjoiMTEwIiwicHMiOiJcdWQ4M2NcdWRkZWRcdWQ4M2NcdWRkZjBbb3BlbnByb3h5bGlzdC5jb21dIHZtZXNzLUhLIiwic2N5IjoiYXV0byIsInNraXAtY2VydC12ZXJpZnkiOnRydWUsInNuaSI6IiIsInRscyI6Im5vbmUiLCJ0eXBlIjoibm9uZSIsInYiOiIyIn0=#NODE-469c1802
 ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpLcGlrVjBXY041NHVsN3l0UDBRT0dXN25qU1M5eHFxeS9KaTg1UE00S1FRPQ==@2.144.23.23:2053#NODE-d1837032
-trojan://humanity@104.18.11.110:443/?type=ws&host=www.multiplydose.com&path=%2Fassignment&security=tls&sni=www.multiplydose.com&allowInsecure=1#NODE-4f8439f8
 trojan://-----------BanV2ray------------@bnbnbbnbnbnbnbnbnbnbnbnbnvn.poki-pakipon.ir:5560?mode=gun&security=reality&pbk=bJrhMKdMfPjEZ-EUazGR6h-uUDWAFxXG1MZlUVsd3Ak&fp=chrome&spx=/&type=grpc&sni=chi.yahoo.com#NODE-90ee0dc8
 trojan://-----------BanV2ray------------@soskeynets.poki-pakipon.ir:5560?mode=gun&security=reality&pbk=bJrhMKdMfPjEZ-EUazGR6h-uUDWAFxXG1MZlUVsd3Ak&fp=chrome&spx=/&type=grpc&sni=chi.yahoo.com#NODE-bfa4deee
 trojan://----------BanV2ray---------@soskeynets.poki-pakipon.ir:4417?mode=gun&security=reality&pbk=bJrhMKdMfPjEZ-EUazGR6h-uUDWAFxXG1MZlUVsd3Ak&fp=chrome&spx=/&type=grpc&sni=chi.yahoo.com#NODE-bfa4deee
@@ -941,6 +940,7 @@ trojan://6aWFNbrFDs@need.uno:443/?type=tcp&security=tls#NODE-ca868ff0
 ss://YWVzLTI1Ni1jZmI6WG44aktkbURNMDBJZU8lIyQjZkpBTXRzRUFFVU9wSC9ZV1l0WXFERm5UMFNW@216.250.97.82:38388#NODE-b40f797f
 vmess://eyJhZGQiOiIxNjUuMTQwLjIxNi4xNDEiLCJhaWQiOiIwIiwiYWxwbiI6IiIsImZwIjoiIiwiaG9zdCI6IiIsImlkIjoiZTdkNzJhOGQtMjZmMi00YjU0LWIzNjYtMGM0M2UwYmNiYTdkIiwibmV0IjoidGNwIiwicGF0aCI6IiIsInBvcnQiOiI0NDMiLCJwcyI6IvCfjoQ4M0BvbmVjbGlja3ZwbmtleXMiLCJzY3kiOiJhdXRvIiwic25pIjoiIiwidGxzIjoiIiwidHlwZSI6IiIsInYiOiIyIn0#NODE-3c29d29c
 trojan://8800c518-e68a-4441-a45c-cd67855784c8@hk1.sanfen001.pics:443/?type=tcp&security=tls&sni=hk1.sanfen001.pics#NODE-0a3275a2
+trojan://humanity@104.18.11.110:443/?type=ws&host=www.multiplydose.com&path=%2Fassignment&security=tls&sni=www.multiplydose.com&allowInsecure=1#NODE-4f8439f8
 ss://YWVzLTEyOC1nY206c2hhZG93c29ja3M@141.98.101.179:443#NODE-c95c4e3f
 ss://YWVzLTEyOC1nY206c2hhZG93c29ja3M@141.98.101.178:443#NODE-8cacc2b3
 ss://YWVzLTI1Ni1nY206VEV6amZBWXEySWp0dW9T@141.164.45.187:6679#NODE-0b1a25f1
