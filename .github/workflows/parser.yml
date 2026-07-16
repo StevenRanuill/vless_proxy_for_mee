@@ -79,6 +79,7 @@ jobs:
         shell: cmd
         run: |
           echo === Сброс и обновление репозитория ===
+          cd C:\actions-runner\_work\vless_proxy_for_mee\vless_proxy_for_mee
           git config --global --add safe.directory "*"
           ipconfig /flushdns
           git config --local user.email "actions@github.com"
