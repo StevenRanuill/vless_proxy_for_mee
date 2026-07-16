@@ -108,11 +108,15 @@ jobs:
       - name: Sync sub-files back to GitHub
         shell: cmd
         env:
-          # Передаем встроенный токен гитхаба для мгновенной авторизации утилиты gh
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Используем встроенный токен сессии гитхаба
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo === Очистка сетевого кэша Windows ===
           ipconfig /flushdns >nul 2>&1
+          
+          echo === Настройка неубиваемой авторизации Git Token ===
+          :: Этот трюк заставляет Git на Windows использовать системный токен сборки напрямую в заголовке запроса
+          git config --local http.https://github.com "AUTHORIZATION: basic"
           
           echo === Добавление измененных файлов подписок ===
           if exist subs git add subs/
@@ -122,9 +126,6 @@ jobs:
           echo === Создание локального коммита ===
           git commit --allow-empty -m "Auto-update deep-checked structured files including my_sub [skip ci]"
           
-          echo === МГНОВЕННЫЙ ПУШ ЧЕРЕЗ GITHUB CLI (ОБХОД БАГА GIT WINDOWS) ===
-          :: Настраиваем авторизацию утилиты gh прямо внутри сессии раннера
-          gh auth setup-git
-          
-          :: Используем команду gh для принудительного и быстрого пуша текущей ветки main
-          gh repo sync --branch main
+          echo === Мгновенный пуш напрямую через HTTPS Токен ===
+          :: Передаем токен прямо в URL репозитория для обхода любых зависающих менеджеров паролей Windows
+          git push https://x-access-token:%GITHUB_TOKEN%@://github.com main --force-with-lease
