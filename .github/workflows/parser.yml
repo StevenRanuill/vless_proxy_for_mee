@@ -1,15 +1,15 @@
 name: Skibidi_tualet_proxy
+
 on:
   schedule:
-    - cron: '0 0 * * *' # Автоматический запуск каждый день в полночь
-  workflow_dispatch: # Возможность ручного запуска кнопкой
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
-  actions: write # Разрешение на принудительное убийство процесса воркфлоу
+  actions: write
 
 jobs:
-  # ЭТАП 0: Проверка доступности домашнего ПК и аварийный стоп
   check-runner:
     runs-on: ubuntu-latest
     steps:
@@ -17,27 +17,19 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Запрашиваем статус локального раннера через GitHub API..."
-          
-          # Получаем статус self-hosted раннера
+          echo "Запрашиваем статус локального раннера..."
           STATUS=$(gh api repos/${{ github.repository }}/actions/runners --jq '.runners[] | select(.labels[].name == "self-hosted") | .status' | head -n 1)
-          
           if [ -z "$STATUS" ]; then
             STATUS="offline"
           fi
-          
           echo "Текущий статус раннера: $STATUS"
-          
           if [ "$STATUS" = "offline" ]; then
-            echo "[АВАРИЙНЫЙ ВЫХОД] Домашний ПК выключен. Убиваем текущий процесс воркфлоу..."
-            # GitHub CLI для отмены текущего запуска
+            echo "[АВАРИЙНЫЙ ВЫХОД] Домашний ПК выключен."
             gh run cancel ${{ github.run_id }}
-            
             sleep 10
             exit 1
           fi
 
-  # ЭТАП 1: Сбор данных в облаке (Запустится только если ПК прошел проверку)
   gather-data:
     needs: check-runner
     runs-on: ubuntu-latest
@@ -48,20 +40,19 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install Dependencies for Fetcher
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install aiohttp
-      - name: Create Structure Directories
+      - name: Clean Old Chunks
         run: |
-          rm -rf logs/*
-          rm -rf raw_chunks/*
+          rm -rf raw_chunks/* logs/*
           mkdir -p logs core subs raw_chunks
-      - name: Run Fetcher & Light Check
+      - name: Run Fetcher
         env:
           PYTHONUNBUFFERED: "1"
         run: python -u fetcher.py
-      - name: Push Raw Chunks to Repository
+      - name: Push Raw Chunks
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
@@ -69,13 +60,12 @@ jobs:
           git commit --allow-empty -m "Deploy fresh pre-filtered chunks [skip ci]"
           git push origin main
 
-  # ЭТАП 2: Основательная поблочная проверка на домашнем ПК
   test-data:
     needs: gather-data
     runs-on: self-hosted
-    timeout-minutes: 60 
+    timeout-minutes: 60
     steps:
-      - name: Hard Reset Network State and Pull Data
+      - name: Hard Reset and Pull
         shell: cmd
         run: |
           ipconfig /flushdns
@@ -83,8 +73,7 @@ jobs:
           git config --local user.name "GitHub Actions"
           git reset --hard origin/main
           git pull origin main
-
-      - name: Run Deep Checker Script File by File
+      - name: Run Checker
         shell: cmd
         env:
           PYTHONIOENCODING: utf-8
@@ -92,40 +81,27 @@ jobs:
         run: |
           chcp 65001
           if not exist subs mkdir subs
-          
-          echo === Начинаем пофайловый обход чанков через Xray Core ===
           for %%F in (raw_chunks\chunk_*.txt) do (
-              echo --------------------------------------------------
-              echo [ПРОЦЕСС] Обработка файла: %%F
-              
-              :: Переменная "%%F" обязательно берется в кавычки для защиты аргументов
-              "C:\pythoncore-3.14-64\python.exe" -u "C:\Proxy\vless_proxy_for_mee\checker.py" --file "%%F"
-              
-              ping 127.0.0.1 -n 3 >nul
+            echo [ПРОЦЕСС] Обработка файла: %%F
+            "C:\pythoncore-3.14-64\python.exe" -u "C:\Proxy\vless_proxy_for_mee\checker.py" --file "%%F"
+            ping 127.0.0.1 -n 3 >nul
           )
-
-
-      - name: Sync sub-files back to GitHub
+      - name: Sync sub-files back
         shell: cmd
         env:
-          # Используем встроенный токен сессии гитхаба
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo === Очистка сетевого кэша Windows ===
           ipconfig /flushdns >nul 2>&1
-          
-          echo === Настройка неубиваемой авторизации Git Token ===
-          :: Этот трюк заставляет Git на Windows использовать системный токен сборки напрямую в заголовке запроса
           git config --local http.https://github.com "AUTHORIZATION: basic"
-          
-          echo === Добавление измененных файлов подписок ===
           if exist subs git add subs/
           if exist logs git add logs/
           if exist core git add core/
-          
-          echo === Создание локального коммита ===
-          git commit --allow-empty -m "Auto-update deep-checked structured files including my_sub [skip ci]"
-          
-          echo === Мгновенный пуш напрямую через HTTPS Токен ===
-          :: Передаем токен прямо в URL репозитория для обхода любых зависающих менеджеров паролей Windows
-          git push https://x-access-token:%GITHUB_TOKEN%@://github.com main --force-with-lease
+          git commit --allow-empty -m "Auto-update deep-checked structured files [skip ci]"
+          git push https://x-access-token:%GITHUB_TOKEN%@github.com/${{ github.repository }}.git main --force-with-lease
+      - name: Post-Run Clean
+        shell: cmd
+        if: always()
+        run: |
+          echo === Удаление отработанных чанков ===
+          if exist raw_chunks del /q raw_chunks\*
+          echo === Локальный ПК очищен! ===
