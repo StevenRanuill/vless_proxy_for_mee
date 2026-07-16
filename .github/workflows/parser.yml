@@ -118,13 +118,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo === Синхронизация результатов ===
+          cd vless_proxy_for_mee
           git config --global --add safe.directory "*"
           ipconfig /flushdns >nul 2>&1
+          git pull origin main --rebase || echo Не удалось выполнить rebase, пробуем pull
+          git pull origin main || echo Не удалось выполнить pull
           if exist subs git add subs/ || echo Нет папки subs
           if exist logs git add logs/ || echo Нет папки logs
           if exist core git add core/ || echo Нет папки core
           git commit --allow-empty -m "Auto-update deep-checked structured files [skip ci]"
-          git push https://x-access-token:%GITHUB_TOKEN%@github.com/${{ github.repository }}.git main --force-with-lease
+              git push https://x-access-token:%GITHUB_TOKEN%@github.com/${{ github.repository }}.git main --force-with-lease
       
       - name: Post-Run Clean
         shell: cmd
