@@ -70,7 +70,7 @@ jobs:
         run: |
           echo === Глобальное исправление Git безопасной директории ===
           git config --global --add safe.directory "*"
-          git config --global --add safe.directory "C:/actions-runner/_work/vless_proxy_for_mee/vless_proxy_for_mee"
+          git config --global --add safe.directory "C:/Proxy/vless_proxy_for_mee"
           echo Текущие настройки Git:
           git config --global --list | findstr safe
           echo Готово
