@@ -77,8 +77,13 @@ jobs:
         shell: cmd
         run: |
           echo "=== Kill Xray ==="
-          taskkill /F /IM xray.exe 2>nul || echo "No Xray processes"
+          taskList | findstr /i "xray.exe" >nul && (
+            taskkill /F /IM xray.exe
+          ) || (
+            echo "No Xray processes found"
+          )
           echo "=== Done ==="
+
 
       - name: Reset and pull repository
         shell: cmd
