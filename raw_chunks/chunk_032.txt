@@ -1,4 +1,3 @@
-vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@165.22.157.7:59483?encryption=none&security=auto&type=grpc&serviceName=&flow=&sni=&fp=chrome#NODE-660e1ecc
 vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@165.22.159.38:59483?encryption=none&security=auto&type=grpc&serviceName=&flow=&sni=&fp=chrome#NODE-03670ff3
 vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@165.22.165.38:59483?encryption=none&type=grpc#NODE-521bb13e
 vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@165.22.165.8:59483?encryption=none&security=none&sni=&type=grpc&host=&path=#NODE-060acd45
@@ -998,3 +997,4 @@ vless://4b9a3393-6e60-4e27-bb11-f48b80f66f03@elenaa.f-35.store:2003?mode=gun&sec
 vless://4b9e8486-148d-4920-a1b7-c72a1576efa7@212.100.171.74:3030?security=none&encryption=none&headerType=none&type=tcp#NODE-c8ff6cba
 vless://4b9fc5ec-bb34-4f47-b337-d9ac9f50beab@104.21.25.66:443?path=%2Fvless&security=tls&encryption=none&host=hk2-vless.sshmax.xyz&type=ws&sni=hk2-vless.sshmax.xyz#NODE-b5964784
 vless://4ba18e09-571e-4b81-a360-8d74bb3a903e@18.192.210.130:44708?security=none&encryption=none&headerType=none&type=tcp#NODE-3a0755b2
+vless://4ba18e09-571e-4b81-a360-8d74bb3a903e@18.199.85.118:44708?security=none&encryption=none&headerType=none&type=tcp#NODE-45b948ca
