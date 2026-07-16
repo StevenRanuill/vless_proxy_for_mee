@@ -65,12 +65,14 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 60
     steps:
-      - name: Fix Git safe.directory
-        shell: cmd
+      - name: Fix Git safe.directory (PowerShell)
+        shell: powershell
         run: |
-          echo === Исправление Git безопасной директории ===
+          Write-Host "=== Исправление Git безопасной директории ==="
           git config --global --add safe.directory "*"
-          echo Глобальный safe.directory настроен
+          git config --global protocol.file.allow always
+          Write-Host "Текущие настройки Git:"
+          git config --global --list | Select-String "safe"
       
       - name: Kill stale Xray processes
         shell: cmd
@@ -83,6 +85,7 @@ jobs:
         shell: cmd
         run: |
           echo === Сброс и обновление репозитория ===
+          git config --global --add safe.directory "*"
           ipconfig /flushdns
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
@@ -119,6 +122,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo === Синхронизация результатов ===
+          git config --global --add safe.directory "*"
           ipconfig /flushdns >nul 2>&1
           if exist subs git add subs/ || echo Нет папки subs
           if exist logs git add logs/ || echo Нет папки logs
