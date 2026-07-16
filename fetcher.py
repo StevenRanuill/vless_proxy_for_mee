@@ -286,7 +286,7 @@ async def async_main():
     with open(CONFIG["FILE_STAGE_1"], "w", encoding="utf-8") as f: 
         f.write("\n".join(stage_1_list))
         
-    seen_fps = set()
+    seen_nodes_hashes = set()
     stage_2_list = []
     pre_filtered_pool = []
     current_date_str = datetime.now().strftime("%Y-%m-%d")
@@ -294,15 +294,17 @@ async def async_main():
     
     for node in stage_1_list:
         fp, clean_node = optimize_node(node)
-        if fp:
-            if fp not in seen_fps:
-                seen_fps.add(fp)
+        if fp and clean_node:
+            # Делаем хэш от ВСЕЙ уникальной ссылки, а не только от host:port
+            node_string_hash = hashlib.md5(clean_node.encode('utf-8')).hexdigest()
+            
+            if node_string_hash not in seen_nodes_hashes:
+                seen_nodes_hashes.add(node_string_hash)
                 stage_2_list.append(clean_node)
                 pre_filtered_pool.append(clean_node)
-            else: dup_count += 1
-            
-    with open(CONFIG["FILE_STAGE_2"], "w", encoding="utf-8") as f: 
-        f.write("\n".join(stage_2_list))
+            else: 
+                dup_count += 1
+
     log_debug(f"Удалено дубликатов на Шаге 2: {dup_count} шт.")
     
     print(f" [ОБЛАКО] Запуск легкого экспресс-теста для {len(pre_filtered_pool)} уникальных нод...", flush=True)
