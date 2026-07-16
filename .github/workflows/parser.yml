@@ -63,7 +63,7 @@ jobs:
   test-data:
     needs: gather-data
     runs-on: self-hosted
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - name: Hard Reset and Pull
         shell: cmd
