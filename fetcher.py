@@ -291,40 +291,37 @@ async def async_main():
             else:
                 dup_count += 1
                 
+    # === НАЧАЛО ИЗМЕНЕНИЙ В ФУНКЦИИ async_main() ===
+    
     with open(CONFIG["FILE_STAGE_2"], "w", encoding="utf-8") as f: 
         f.write("\n".join(stage_2_list))
-
     log_debug(f"Удалено дубликатов на Шаге 2: {dup_count} шт.")
-    print(f"⚡ [ОБЛАКО] Запуск легкого экспресс-теста для {len(pre_filtered_pool)} уникальных нод...", flush=True)
     
-    check_semaphore = asyncio.Semaphore(CONFIG["MAX_CONCURRENT_LIGHT_CHECK"])
-    check_tasks = [light_ping_node(check_semaphore, node) for node in pre_filtered_pool]
-    check_results = await asyncio.gather(*check_tasks)
+    # ОТКЛЮЧАЕМ ЛЕГКИЙ ПИНГ: Просто переносим весь пул уникальных нод в финальный пул
+    print("[МОДИФИКАЦИЯ] Легкий пинг отключен. Передаем 100% уникальных нод напрямую в чанки!", flush=True)
+    final_pool = list(pre_filtered_pool) 
     
-    final_pool = [node for node in check_results if node is not None]
-    
-    # Записываем в историю и обновляем формат
+    # Обновляем историю меток для всех найденных уникальных нод
     for node in final_pool:
         fp, _ = optimize_node(node)
         if fp:
             fp_hash = hashlib.md5(fp.encode()).hexdigest()
             if fp_hash in history_db:
-                if isinstance(history_db[fp_hash], dict):
+                if isinstance(history_db[fp_hash], dict): 
                     history_db[fp_hash]["last_success"] = current_date_str
-                else:
-                    history_db[fp_hash] = {
-                        "last_success": current_date_str,
-                        "first_seen": history_db[fp_hash]
-                    }
-            else:
-                history_db[fp_hash] = {
-                    "last_success": current_date_str,
-                    "first_seen": current_date_str
-                }
+                else: 
+                    history_db[fp_hash] = {"last_success": current_date_str, "first_seen": history_db[fp_hash]}
+            else: 
+                history_db[fp_hash] = {"last_success": current_date_str, "first_seen": current_date_str}
+                
     save_history(history_db)
-
+    
+    # Записываем сырой неотфильтрованный массив в итоговый лог шага 3
     with open(CONFIG["FILE_STAGE_3"], "w", encoding="utf-8") as f: 
         f.write("\n".join(final_pool))
+        
+    # === КОНЕЦ ИЗМЕНЕНИЙ (далее идет стандартная нарезка чанков chunk_*.txt) ===
+
     
     # 🔥 ИТОГОВЫЙ РАСШИРЕННЫЙ ДЕБАГ-ДАШБОРД В КОНСОЛЬ БИЛДА GITHUB ACTIONS
     print("\n" + "="*60)
