@@ -49,6 +49,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 SOURCES_FILE = BASE_DIR / "sources.yml"
 
+MY_SUB_FILE = BASE_DIR / "my_sub.txt"
 
 OUTPUT_DIR = BASE_DIR / "output"
 
@@ -1915,6 +1916,10 @@ def main():
         invalid_nodes,
     )
 
+    write_file(
+        MY_SUB_FILE,
+        valid_nodes,
+    )
 
     write_file(
         DUPLICATES_FILE,
