@@ -2,18 +2,21 @@ name: Skibidi_tualet
 
 on:
   schedule:
-    - cron: '0 0 */2 * *' # Сбор каждые 6 часов
+    # Автоматический запуск строго в полночь раз в 2 дня
+    - cron: '0 0 */2 * *'
   workflow_dispatch:      # Кнопка ручного запуска в интерфейсе GitHub
 
 permissions:
-  contents: write
+  contents: write         # Даем экшену права на запись чанков в репозиторий
 
 jobs:
   gather-data:
-    runs-on: ubuntu-latest # Используем бесплатный быстрый Linux от GitHub
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # Скачиваем всю историю коммитов для исключения конфликтов веток
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -22,17 +25,24 @@ jobs:
 
       - name: Install Fetcher Dependencies
         run: |
-          pip install aiohttp
+          python -m pip install --upgrade pip
+          pip install aiohttp pyyaml
 
-      - name: Run Original Fetcher with SNI Filter
+      - name: Run VLESS Fetcher v2
         run: |
-          python fetcher.py
+          # Флаг -u отключает буферизацию, выводя Ваш красивый дашборд в реальном времени
+          python -u fetcher.py
 
       - name: Push Clean Chunks to Repository
         run: |
           git config --local user.email "fetcher_bot@github.com"
           git config --local user.name "VLESS Chunker Bot"
-          git add raw_chunks/chunk_*.txt core/*.json logs/*.txt
           
-          # Проверяем, изменились ли чанки, чтобы не делать пустые коммиты
+          # Безопасно склеиваем коммиты, если ваш домашний ПК успел залить результаты тестов
+          git pull origin main --rebase
+          
+          # Добавляем в репозиторий обновленные чанки и конфигурационные файлы
+          git add raw_chunks/chunk_*.txt core/*.json logs/*.txt output/*.txt output/stats.json 2>/dev/null || true
+          
+          # Делаем коммит и пуш только при наличии реальных изменений в чанках
           git diff --quiet && git diff --staged --quiet || (git commit -m "Update clean chunks [skip ci]" && git push)
