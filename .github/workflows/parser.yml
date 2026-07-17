@@ -2,7 +2,7 @@ name: Skibidi_tualet
 
 on:
   schedule:
-    - cron: ' * * */2 *' # Сбор каждые 6 часов
+    - cron: '0 0 */2 * *' # Сбор каждые 6 часов
   workflow_dispatch:      # Кнопка ручного запуска в интерфейсе GitHub
 
 permissions:
