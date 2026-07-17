@@ -144,37 +144,49 @@ jobs:
 
           git status --short
 
+      - name: Upload parser results
+
+        uses: actions/upload-artifact@v4
+
+        with:
+
+          name: Skibidi_tualet_proxy-results
+
+          path: |
+
+            my_sub.txt
+    
+            output/valid_vless.txt
+
+            output/invalid_vless.txt
+
+            output/duplicates.txt
+
+            output/stats.json
+
+            output/sources_stats.json
+
+            output/chunks/
 
       # ------------------------------------------------------
       # Commit changes
       # ------------------------------------------------------
 
-      - name: Commit updated subscriptions
-
-        shell: bash
+      - name: Commit updated results
 
         run: |
 
-          git config user.name "github-actions[bot]"
+          git config --global user.name "github-actions[bot]"
 
-          git config user.email \
-            "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+
+          git add my_sub.txt
 
           git add output/
 
 
-          if git diff --cached --quiet; then
-
-            echo "No changes detected."
-
-            exit 0
-
-          fi
-
-
-          git commit \
-            -m "chore: update VLESS subscriptions"
+          git diff --cached --quiet || git commit -m "Auto update VLESS subscriptions"
 
 
           git push
