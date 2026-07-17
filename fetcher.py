@@ -23,23 +23,31 @@ BASE_DIR = os.path.dirname(
 )
 
 
-PARSER_CONFIG = os.path.join(
-    BASE_DIR,
-    "config",
-    "parser.yml"
+# ============================================================
+# PATHS (ИСПРАВЛЕНО ДЛЯ GITHUB ACTIONS И ЛОКАЛЬНОГО ПК)
+# ============================================================
+BASE_DIR = os.path.dirname(
+    os.path.abspath(__file__)
 )
 
+# Перенаправляем поиск в системную папку воркфлоу, где физически лежит parser.yml
+PARSER_CONFIG = os.path.join(
+    BASE_DIR,
+    ".github",
+    "workflows",
+    "parser.yml"
+)
 
 OUTPUT_DIR = os.path.join(
     BASE_DIR,
     "output"
 )
 
-
 os.makedirs(
     OUTPUT_DIR,
     exist_ok=True
 )
+
 
 
 # ============================================================
