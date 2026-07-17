@@ -23,6 +23,7 @@ permissions:
   contents: write
 
 
+
 concurrency:
   group: vless-parser
   cancel-in-progress: false
