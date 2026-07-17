@@ -1,380 +1,464 @@
 [
   {
-    "url": "https://raw.githubusercontent.com/miladtahanian/V2RayCFGDumper/refs/heads/main/sub.txt",
+    "url": "https://raw.githubusercontent.com/ShatakVPN/ConfigForge-V2Ray/refs/heads/main/configs/vless.txt",
     "status": "success",
-    "bytes": 16011,
-    "download_time": 0.176,
-    "found": 69,
-    "error": null,
-    "valid_after_filter": 0
-  },
-  {
-    "url": "https://raw.githubusercontent.com/roosterkid/openproxylist/main/V2RAY_RAW.txt",
-    "status": "success",
-    "bytes": 33712,
-    "download_time": 0.249,
-    "found": 100,
-    "error": null,
-    "valid_after_filter": 0
-  },
-  {
-    "url": "https://raw.githubusercontent.com/acymz/AutoVPN/refs/heads/main/data/V2.txt",
-    "status": "success",
-    "bytes": 40532,
-    "download_time": 0.285,
-    "found": 59,
-    "error": null,
-    "valid_after_filter": 0
-  },
-  {
-    "url": "https://raw.githubusercontent.com/MahsaNetConfigTopic/config/refs/heads/main/xray_final.txt",
-    "status": "success",
-    "bytes": 51184,
-    "download_time": 0.252,
-    "found": 282,
-    "error": null,
-    "valid_after_filter": 0
-  },
-  {
-    "url": "https://raw.githubusercontent.com/Pawdroid/Free-servers/refs/heads/main/sub",
-    "status": "success",
-    "bytes": 5520,
-    "download_time": 0.239,
-    "found": 7,
-    "error": null,
-    "valid_after_filter": 0
-  },
-  {
-    "url": "https://raw.githubusercontent.com/sakha1370/OpenRay/refs/heads/main/output/all_valid_proxies.txt",
-    "status": "success",
-    "bytes": 2607609,
-    "download_time": 0.341,
-    "found": 16510,
-    "error": null,
-    "valid_after_filter": 0
+    "download_time": 0.22,
+    "bytes": 300564,
+    "attempts": 1,
+    "found": 1942,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
     "url": "https://raw.githubusercontent.com/mohamadfg-dev/telegram-v2ray-configs-collector/refs/heads/main/category/vless.txt",
     "status": "success",
+    "download_time": 0.23,
     "bytes": 68310,
-    "download_time": 0.339,
+    "attempts": 1,
     "found": 262,
-    "error": null,
-    "valid_after_filter": 0
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
-    "url": "https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/mixed_iran.txt",
+    "url": "https://raw.githubusercontent.com/acymz/AutoVPN/refs/heads/main/data/V2.txt",
     "status": "success",
-    "bytes": 106182,
-    "download_time": 0.335,
-    "found": 350,
-    "error": null,
-    "valid_after_filter": 0
+    "download_time": 0.243,
+    "bytes": 40532,
+    "attempts": 1,
+    "found": 59,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
-    "url": "https://raw.githubusercontent.com/ShatakVPN/ConfigForge-V2Ray/refs/heads/main/configs/vless.txt",
+    "url": "https://raw.githubusercontent.com/roosterkid/openproxylist/main/V2RAY_RAW.txt",
     "status": "success",
-    "bytes": 300564,
-    "download_time": 0.362,
-    "found": 1942,
-    "error": null,
-    "valid_after_filter": 0
+    "download_time": 0.273,
+    "bytes": 34061,
+    "attempts": 1,
+    "found": 99,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
-    "url": "https://raw.githubusercontent.com/free18/v2ray/refs/heads/main/v.txt",
+    "url": "https://raw.githubusercontent.com/Pawdroid/Free-servers/refs/heads/main/sub",
     "status": "success",
-    "bytes": 111857,
-    "download_time": 0.3,
-    "found": 309,
-    "error": null,
-    "valid_after_filter": 0
+    "download_time": 0.244,
+    "bytes": 6068,
+    "attempts": 1,
+    "found": 10,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
-    "url": "https://raw.githubusercontent.com/wuqb2i4f/xray-config-toolkit/main/output/base64/mix-uri",
+    "url": "https://raw.githubusercontent.com/miladtahanian/V2RayCFGDumper/refs/heads/main/sub.txt",
     "status": "success",
-    "bytes": 204305,
-    "download_time": 0.124,
-    "found": 1225,
-    "error": null,
-    "valid_after_filter": 0
-  },
-  {
-    "url": "https://raw.githubusercontent.com/V2RayRoot/V2RayConfig/refs/heads/main/Config/vless.txt",
-    "status": "success",
-    "bytes": 71433,
-    "download_time": 0.111,
-    "found": 459,
-    "error": null,
-    "valid_after_filter": 0
-  },
-  {
-    "url": "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/WHITE-CIDR-RU-all.txt",
-    "status": "success",
-    "bytes": 34837,
-    "download_time": 0.076,
-    "found": 224,
-    "error": null,
-    "valid_after_filter": 0
-  },
-  {
-    "url": "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_VLESS_RUS.txt",
-    "status": "success",
-    "bytes": 82176,
-    "download_time": 0.129,
-    "found": 555,
-    "error": null,
-    "valid_after_filter": 0
+    "download_time": 0.279,
+    "bytes": 16011,
+    "attempts": 1,
+    "found": 69,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
     "url": "https://raw.githubusercontent.com/miladtahanian/Config-Collector/refs/heads/main/mixed_iran.txt",
     "status": "success",
+    "download_time": 0.265,
     "bytes": 94469,
-    "download_time": 0.388,
+    "attempts": 1,
     "found": 531,
-    "error": null,
-    "valid_after_filter": 0
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
+  },
+  {
+    "url": "https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/mixed_iran.txt",
+    "status": "success",
+    "download_time": 0.297,
+    "bytes": 106182,
+    "attempts": 1,
+    "found": 350,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
+  },
+  {
+    "url": "https://raw.githubusercontent.com/MahsaNetConfigTopic/config/refs/heads/main/xray_final.txt",
+    "status": "success",
+    "download_time": 0.293,
+    "bytes": 51184,
+    "attempts": 1,
+    "found": 282,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
+  },
+  {
+    "url": "https://raw.githubusercontent.com/free18/v2ray/refs/heads/main/v.txt",
+    "status": "success",
+    "download_time": 0.28,
+    "bytes": 111857,
+    "attempts": 1,
+    "found": 309,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
+  },
+  {
+    "url": "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_VLESS_RUS.txt",
+    "status": "success",
+    "download_time": 0.108,
+    "bytes": 82176,
+    "attempts": 1,
+    "found": 555,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
+  },
+  {
+    "url": "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/WHITE-CIDR-RU-all.txt",
+    "status": "success",
+    "download_time": 0.096,
+    "bytes": 34837,
+    "attempts": 1,
+    "found": 224,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
     "url": "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector_Py/refs/heads/main/sub/Mix/mix.txt",
     "status": "success",
+    "download_time": 0.337,
     "bytes": 450014,
-    "download_time": 0.383,
+    "attempts": 1,
     "found": 707,
-    "error": null,
-    "valid_after_filter": 0
-  },
-  {
-    "url": "https://raw.githubusercontent.com/Mr-Meshky/vify/refs/heads/main/configs/vless.txt",
-    "status": "success",
-    "bytes": 329386,
-    "download_time": 0.183,
-    "found": 2346,
-    "error": null,
-    "valid_after_filter": 0
-  },
-  {
-    "url": "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/refs/heads/main/sub/mix",
-    "status": "success",
-    "bytes": 579518,
-    "download_time": 0.401,
-    "found": 1414,
-    "error": null,
-    "valid_after_filter": 0
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
     "url": "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/WHITE-SNI-RU-all.txt",
     "status": "success",
+    "download_time": 0.1,
     "bytes": 16199,
-    "download_time": 0.14,
+    "attempts": 1,
     "found": 108,
-    "error": null,
-    "valid_after_filter": 0
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
+  },
+  {
+    "url": "https://raw.githubusercontent.com/V2RayRoot/V2RayConfig/refs/heads/main/Config/vless.txt",
+    "status": "success",
+    "download_time": 0.126,
+    "bytes": 71433,
+    "attempts": 1,
+    "found": 459,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
+  },
+  {
+    "url": "https://raw.githubusercontent.com/wuqb2i4f/xray-config-toolkit/main/output/base64/mix-uri",
+    "status": "success",
+    "download_time": 0.176,
+    "bytes": 204305,
+    "attempts": 1,
+    "found": 1225,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
     "url": "https://raw.githubusercontent.com/LalatinaHub/Mineral/refs/heads/master/result/nodes",
     "status": "success",
+    "download_time": 0.392,
     "bytes": 484789,
-    "download_time": 0.472,
+    "attempts": 1,
     "found": 2823,
-    "error": null,
-    "valid_after_filter": 0
-  },
-  {
-    "url": "https://raw.githubusercontent.com/zieng2/wl/main/vless_lite.txt",
-    "status": "success",
-    "bytes": 170922,
-    "download_time": 0.132,
-    "found": 614,
-    "error": null,
-    "valid_after_filter": 0
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
     "url": "https://raw.githubusercontent.com/zieng2/wl/refs/heads/main/vless_universal.txt",
     "status": "success",
+    "download_time": 0.156,
     "bytes": 169656,
-    "download_time": 0.188,
+    "attempts": 1,
     "found": 606,
-    "error": null,
-    "valid_after_filter": 0
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
+  },
+  {
+    "url": "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/refs/heads/main/sub/mix",
+    "status": "success",
+    "download_time": 0.426,
+    "bytes": 579518,
+    "attempts": 1,
+    "found": 1414,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
     "url": "https://raw.githubusercontent.com/ByeWhiteLists/ByeWhiteLists2/refs/heads/main/ByeWhiteLists2.txt",
     "status": "success",
+    "download_time": 0.14,
     "bytes": 314143,
-    "download_time": 0.181,
+    "attempts": 1,
     "found": 1791,
-    "error": null,
-    "valid_after_filter": 0
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
     "url": "https://raw.githubusercontent.com/kort0881/vpn-vless-configs-russia/refs/heads/main/data/githubmirror/ru-sni/vless.txt",
     "status": "success",
+    "download_time": 0.515,
     "bytes": 400906,
-    "download_time": 0.575,
+    "attempts": 1,
     "found": 1320,
-    "error": null,
-    "valid_after_filter": 0
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
-    "url": "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Splitted-By-Protocol/vless.txt",
+    "url": "https://raw.githubusercontent.com/zieng2/wl/main/vless_lite.txt",
     "status": "success",
-    "bytes": 1437440,
-    "download_time": 0.583,
-    "found": 3373,
-    "error": null,
-    "valid_after_filter": 0
+    "download_time": 0.198,
+    "bytes": 170922,
+    "attempts": 1,
+    "found": 614,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
     "url": "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/v2ray/super-sub.txt",
     "status": "success",
+    "download_time": 0.131,
     "bytes": 71592,
-    "download_time": 0.157,
+    "attempts": 1,
     "found": 19,
-    "error": null,
-    "valid_after_filter": 0
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
     "url": "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/filtered/subs/vless.txt",
     "status": "success",
+    "download_time": 0.161,
     "bytes": 143152,
-    "download_time": 0.173,
+    "attempts": 1,
     "found": 377,
-    "error": null,
-    "valid_after_filter": 0
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
-    "url": "https://raw.githubusercontent.com/VOID-Anonymity/V.O.I.D-VPN_Bypass/refs/heads/main/url_work.txt",
+    "url": "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Splitted-By-Protocol/vless.txt",
     "status": "success",
-    "bytes": 1860048,
-    "download_time": 0.579,
-    "found": 7678,
-    "error": null,
-    "valid_after_filter": 0
+    "download_time": 0.567,
+    "bytes": 1437440,
+    "attempts": 1,
+    "found": 3373,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
-    "url": "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/v2ray/all_sub.txt",
+    "url": "https://raw.githubusercontent.com/Mr-Meshky/vify/refs/heads/main/configs/vless.txt",
     "status": "success",
-    "bytes": 1124605,
-    "download_time": 0.21,
-    "found": 594,
-    "error": null,
-    "valid_after_filter": 0
-  },
-  {
-    "url": "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt",
-    "status": "success",
-    "bytes": 1345106,
-    "download_time": 0.195,
-    "found": 3627,
-    "error": null,
-    "valid_after_filter": 0
-  },
-  {
-    "url": "https://raw.githubusercontent.com/yitong2333/proxy-minging/refs/heads/main/v2ray.txt",
-    "status": "success",
-    "bytes": 3118419,
-    "download_time": 0.716,
-    "found": 7122,
-    "error": null,
-    "valid_after_filter": 0
-  },
-  {
-    "url": "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt",
-    "status": "success",
-    "bytes": 1515669,
-    "download_time": 0.237,
-    "found": 0,
-    "error": null,
-    "valid_after_filter": 0
-  },
-  {
-    "url": "https://etoneya.su/whitelist",
-    "status": "success",
-    "bytes": 46180,
-    "download_time": 0.343,
-    "found": 157,
-    "error": null,
-    "valid_after_filter": 0
+    "download_time": 0.29,
+    "bytes": 313603,
+    "attempts": 1,
+    "found": 2239,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
     "url": "https://gist.githubusercontent.com/Hido888/e5fbb3b32bb1a6aad8cc0ae9d1cded79/raw/vless_subscribe.txt",
     "status": "success",
+    "download_time": 0.158,
     "bytes": 989,
-    "download_time": 0.202,
+    "attempts": 1,
     "found": 3,
-    "error": null,
-    "valid_after_filter": 0
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
-    "url": "https://raw.githubusercontent.com/mheidari98/.proxy/refs/heads/main/vless",
+    "url": "https://etoneya.su/whitelist",
     "status": "success",
-    "bytes": 2108944,
-    "download_time": 0.757,
-    "found": 6780,
-    "error": null,
-    "valid_after_filter": 0
-  },
-  {
-    "url": "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_base64_Sub.txt",
-    "status": "success",
-    "bytes": 1793476,
-    "download_time": 0.306,
-    "found": 3332,
-    "error": null,
-    "valid_after_filter": 0
+    "download_time": 0.298,
+    "bytes": 46180,
+    "attempts": 1,
+    "found": 157,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
     "url": "https://gist.githubusercontent.com/Hido888/fa5375f00d741f2d0032d73721ebd861/raw/vless_subscribe.txt",
     "status": "success",
+    "download_time": 0.171,
     "bytes": 547,
-    "download_time": 0.271,
+    "attempts": 1,
     "found": 3,
-    "error": null,
-    "valid_after_filter": 0
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
-    "url": "https://raw.githubusercontent.com/shabane/kamaji/master/hub/merged.txt",
+    "url": "https://raw.githubusercontent.com/yitong2333/proxy-minging/refs/heads/main/v2ray.txt",
     "status": "success",
-    "bytes": 5870250,
-    "download_time": 0.613,
-    "found": 13662,
-    "error": null,
-    "valid_after_filter": 0
+    "download_time": 0.701,
+    "bytes": 3118419,
+    "attempts": 1,
+    "found": 7122,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
+  },
+  {
+    "url": "https://raw.githubusercontent.com/sakha1370/OpenRay/refs/heads/main/output/all_valid_proxies.txt",
+    "status": "success",
+    "download_time": 0.72,
+    "bytes": 2607609,
+    "attempts": 1,
+    "found": 16510,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
+  },
+  {
+    "url": "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/v2ray/all_sub.txt",
+    "status": "success",
+    "download_time": 0.322,
+    "bytes": 1124605,
+    "attempts": 1,
+    "found": 594,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
+  },
+  {
+    "url": "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt",
+    "status": "success",
+    "download_time": 0.319,
+    "bytes": 1345106,
+    "attempts": 1,
+    "found": 3627,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
+  },
+  {
+    "url": "https://raw.githubusercontent.com/VOID-Anonymity/V.O.I.D-VPN_Bypass/refs/heads/main/url_work.txt",
+    "status": "success",
+    "download_time": 0.718,
+    "bytes": 1860048,
+    "attempts": 1,
+    "found": 7678,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
+  },
+  {
+    "url": "https://raw.githubusercontent.com/mheidari98/.proxy/refs/heads/main/vless",
+    "status": "success",
+    "download_time": 0.74,
+    "bytes": 2108944,
+    "attempts": 1,
+    "found": 6780,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
+  },
+  {
+    "url": "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt",
+    "status": "success",
+    "download_time": 0.272,
+    "bytes": 1515669,
+    "attempts": 1,
+    "found": 0,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
     "url": "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge_base64.txt",
     "status": "success",
+    "download_time": 0.279,
     "bytes": 2020892,
-    "download_time": 0.334,
+    "attempts": 1,
     "found": 0,
-    "error": null,
-    "valid_after_filter": 0
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
+  },
+  {
+    "url": "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_base64_Sub.txt",
+    "status": "success",
+    "download_time": 0.349,
+    "bytes": 1793476,
+    "attempts": 1,
+    "found": 3332,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
+  },
+  {
+    "url": "https://raw.githubusercontent.com/shabane/kamaji/master/hub/merged.txt",
+    "status": "success",
+    "download_time": 0.594,
+    "bytes": 5870250,
+    "attempts": 1,
+    "found": 13662,
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
     "url": "https://raw.githubusercontent.com/sevcator/5ubscrpt10n/main/protocols/vl.txt",
     "status": "success",
+    "download_time": 1.019,
     "bytes": 47886020,
-    "download_time": 0.988,
+    "attempts": 1,
     "found": 277686,
-    "error": null,
-    "valid_after_filter": 0
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
     "url": "https://s3c3.001.gpucloud.ru/wlr/wl.txt",
     "status": "success",
+    "download_time": 1.531,
     "bytes": 622211,
-    "download_time": 2.225,
+    "attempts": 1,
     "found": 2664,
-    "error": null,
-    "valid_after_filter": 0
+    "valid": 0,
+    "duplicates": 0,
+    "error": null
   },
   {
     "url": "https://raw.githubusercontent.com/QinYCH/v2ray-configs2/main/All_Configs_Sub.txt",
     "status": "failed",
+    "download_time": 10.161,
     "bytes": 0,
-    "download_time": 10.17,
+    "attempts": 3,
     "found": 0,
-    "error": "404 Client Error: Not Found for url: https://raw.githubusercontent.com/QinYCH/v2ray-configs2/main/All_Configs_Sub.txt",
-    "valid_after_filter": 0
+    "valid": 0,
+    "duplicates": 0,
+    "error": "404 Client Error: Not Found for url: https://raw.githubusercontent.com/QinYCH/v2ray-configs2/main/All_Configs_Sub.txt"
   }
 ]
