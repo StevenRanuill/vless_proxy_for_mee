@@ -1,4 +1,4 @@
-```python
+
 from __future__ import annotations
 
 import base64
@@ -1403,4 +1403,4 @@ if __name__ == "__main__":
         raise SystemExit(
             1
         )
-```
+
