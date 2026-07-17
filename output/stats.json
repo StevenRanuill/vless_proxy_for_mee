@@ -1,21 +1,21 @@
 {
   "project": "Skibidi_tualet_proxy",
-  "time": "2026-07-17 07:36:34",
+  "time": "2026-07-17 08:02:10",
   "sources": {
     "total": 42,
     "success": 41,
     "failed": 1
   },
   "nodes": {
-    "valid": 103334,
-    "invalid": 46155,
-    "duplicates": 212180
+    "valid": 103372,
+    "invalid": 46098,
+    "duplicates": 212220
   },
   "protocols": {
     "security": {
-      "reality": 25088,
-      "none": 44508,
-      "tls": 33077,
+      "reality": 25107,
+      "none": 44515,
+      "tls": 33089,
       "false": 104,
       "xtls": 36,
       "none=/@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran": 109,
@@ -42,22 +42,22 @@
       "reality=/": 1
     },
     "transport": {
-      "tcp": 39265,
-      "grpc": 14100,
-      "ws": 44298,
-      "xhttp": 5434,
+      "tcp": 39268,
+      "grpc": 14117,
+      "ws": 44308,
+      "xhttp": 5442,
       "http": 181,
       "kcp": 49,
       "h2": 3,
       "quic": 4
     },
     "errors": {
-      "unknown_transport": 15527,
-      "reality_without_pbk": 3566,
-      "url_error:Invalid IPv6 URL": 17,
+      "unknown_transport": 15455,
+      "reality_without_pbk": 3573,
+      "reality_without_sni": 566,
+      "tls_without_sni": 6226,
       "bad_uuid": 19489,
-      "tls_without_sni": 6216,
-      "reality_without_sni": 568,
+      "url_error:Invalid IPv6 URL": 17,
       "bad_host": 21,
       "bad_port": 23,
       "url_error:'6fa0ed5f-4c53-4fa9-af42-46fb2ca1278a' does not appear to be an IPv4 or IPv6 address": 3,

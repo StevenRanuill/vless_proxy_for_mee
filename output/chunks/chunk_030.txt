@@ -1,3 +1,9 @@
+vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@138.68.240.192:59483?encryption=none&security=none&sni=&type=grpc&host=&path=#
+vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@138.68.241.46:59483?encryption=none&security=none&sni=&type=grpc&host=&path=#
+vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@138.68.242.25:59483?encryption=none&security=auto&type=grpc&serviceName=&flow=&sni=&fp=chrome#
+vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@138.68.245.110:59483?encryption=none&security=none&sni=&type=grpc&host=&path=#
+vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@138.68.246.3:59483?encryption=none&security=auto&type=grpc&serviceName=&flow=&sni=&fp=chrome#
+vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@138.68.248.119:59483?encryption=none&security=auto&type=grpc&serviceName=&flow=&sni=&fp=chrome#
 vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@138.68.248.174:59483?encryption=none&security=none&sni=&type=grpc&host=&path=#
 vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@138.68.248.204:59483?encryption=none&security=auto&type=grpc&serviceName=&flow=&sni=&fp=chrome#
 vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@138.68.248.28:59483?encryption=none&security=auto&type=grpc&serviceName=&flow=&sni=&fp=chrome#
@@ -634,7 +640,7 @@ vless://47ded098-e539-4ab8-b545-d8059f5b3b0b@213.176.66.228:37021?flow=xtls-rprx
 vless://47df3f6c-c3a0-463b-a6a0-ad4e8494c95b@20.0.105.19:443/?type=tcp&encryption=none&flow=xtls-rprx-vision&sni=www.cloudflare.com&fp=safari&security=reality&pbk=zNtSqVR2dp454rIsJL8qQ-miOuSIP33Koyqc9gUGdV8&sid=60bf01f7#%F0%9F%91%89%F0%9F%86%94%40v2ray_configs_pool%F0%9F%93%A1%F0%9F%87%AC%F0%9F%87%A7%C2%AE%EF%B8%8FUnited%20Kingdom%C2%A9%EF%B8%8FLondon%F0%9F%85%BF%EF%B8%8Fping%3A47ms
 vless://47df3f6c-c3a0-463b-a6a0-ad4e8494c95b@20.0.105.19:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.cloudflare.com&fp=safari&pbk=zNtSqVR2dp454rIsJL8qQ-miOuSIP33Koyqc9gUGdV8&sid=60bf01f7#%5BOpenRay%5D%20%F0%9F%87%AC%F0%9F%87%A7%20GB-2078
 vless://47df6fe1-cc2a-4f26-b748-08d902272bde@172.67.201.123:443?security=tls&sni=PpAL03.arNUlFo-kunZE.WORkerS.dEV&type=ws&host=PpAl03.arNULFO-KuNZe.worKErS.Dev&path=%2FTelegram%40V2ray_Alpha%3Fed%3D2048#
-vless://47e144de-9fb2-47da-9a1b-c8f78df22e99@5.35.91.70:443?encryption=none&fp=firefox&pbk=0Ez22rHq6dK6mUOOU5nv0uEhEkMBTui07FFTe1mH70Q&security=reality&sid=f8c21d6b3a9e7054&sni=github.com&type=tcp#RU
+vless://47e144de-9fb2-47da-9a1b-c8f78df22e99@5.35.91.70:443?encryption=none&fp=firefox&pbk=0Ez22rHq6dK6mUOOU5nv0uEhEkMBTui07FFTe1mH70Q&security=reality&sid=f8c21d6b3a9e7054&sni=github.com&type=tcp#%F0%9F%87%B7%F0%9F%87%BA%20Russia%2C%20St%20Petersburg%20%7C%20%5BBL%5D
 vless://47e16bc6-7a69-4450-a7ce-9971c14aec4f@51.195.99.254:443?encryption=none&security=none&type=tcp#
 vless://47e16bc6-7a69-4450-a7ce-9971c14aec4f@sibilgg.opik.net:443/?type=tcp&encryption=none&flow=#
 vless://47e16bc6-7a69-4450-a7ce-9971c14aec4f@sibilgg.opik.net:443?security=&amp;encryption=none&amp;headerType=none&amp;type=tcp#Telegram:@zede_filteri
@@ -992,9 +998,3 @@ vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.41.223.237:443?security=tls&sni
 vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.62.62.0:443?security=tls&sni=xf.ylks.xyz&type=ws&path=%2Fblue#
 vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.62.62.106:443?encryption=none&security=tls&sni=ap.ylks.xyz&type=ws&host=ap.ylks.xyz&path=%2Fblue#
 vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.62.62.110:443?security=tls&sni=xw.ylks.xyz&type=ws&path=%2F%3Fproxyip#
-vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.62.62.131:443?security=tls&sni=ad.ylks.xyz&type=ws&host=ad.ylks.xyz&path=%2Fblue#
-vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.62.62.165:443?security=tls&sni=ad.ylks.xyz&type=ws&host=ad.ylks.xyz&path=%2Fblue#
-vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.62.62.166:443?security=tls&sni=ad.ylks.xyz&type=ws&path=%2F%3Fproxyip%3Dproxyip.us.fxxk.dedyn.io#
-vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.62.62.170:443?security=tls&sni=ap.ylks.xyz&type=ws&host=ap.ylks.xyz&path=%2Fblue#
-vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.62.62.183:443?security=tls&sni=xd.ylks.xyz&type=ws&path=%2Ffreecodes#
-vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.62.62.186:443?security=tls&sni=ad.ylks.xyz&type=ws&host=ad.ylks.xyz&path=%2Fblue#
