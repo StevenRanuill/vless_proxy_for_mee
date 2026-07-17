@@ -1,0 +1,67 @@
+{
+  "project": "Skibidi_tualet_proxy",
+  "time": "2026-07-17 07:36:34",
+  "sources": {
+    "total": 42,
+    "success": 41,
+    "failed": 1
+  },
+  "nodes": {
+    "valid": 103334,
+    "invalid": 46155,
+    "duplicates": 212180
+  },
+  "protocols": {
+    "security": {
+      "reality": 25088,
+      "none": 44508,
+      "tls": 33077,
+      "false": 104,
+      "xtls": 36,
+      "none=/@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran": 109,
+      "reality=/@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn": 1,
+      "reality=/@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran": 6,
+      "nonehttps://t.me/": 1,
+      "none=/@mcv2rayng--@mcv2rang--@mcv2rayng--@mcv2rayng--@mcv2rayng--@mcv2rayng--@mcv2rayng--@mcv2rayng": 1,
+      "none=#@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn": 10,
+      "none=": 12,
+      "none=/@icv2ray,--@icv2ray,--@icv2ray,--@icv2ray,--@icv2ray,--@icv2ray,--@icv2ray--@icv2ray,--@icv2ray,--@icv2ray,--@icv2ray,--@icv2ray": 1,
+      "none=@": 2,
+      "none=@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub---@confiig_hub": 2,
+      "none=/,@bored_vpn,--,@bored_vpn,,@bored_vpn,--,@bored_vpn,,@bored_vpn,--,@bored_vpn,,@bored_vpn,--,@bored_vpn,,@bored_vpn,--,@bored_vpn,,@bored_vpn,--,@bored_vpn": 8,
+      "auto": 353,
+      "none=/@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn": 4,
+      "nonee=@freeonlinevpn": 1,
+      "none=/@telegram-|-@tehranargo-joinbede-|-@telegram-|-@tehranargo-|-joinbede-|-@telegram-|-@tehranargo": 3,
+      "reality=/#@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn": 1,
+      "tlshttps://t.me/vtworay_wolf/1191": 1,
+      "lti4um2ktdx2ycczh2kdi1_jz-mg": 1,
+      "non=e": 1,
+      "t": 1,
+      "tls=-@ghalagyann---@ghalagyann---@ghalagyann---@ghalagyann---@ghalagyann---@ghalagyann": 1,
+      "reality=/": 1
+    },
+    "transport": {
+      "tcp": 39265,
+      "grpc": 14100,
+      "ws": 44298,
+      "xhttp": 5434,
+      "http": 181,
+      "kcp": 49,
+      "h2": 3,
+      "quic": 4
+    },
+    "errors": {
+      "unknown_transport": 15527,
+      "reality_without_pbk": 3566,
+      "url_error:Invalid IPv6 URL": 17,
+      "bad_uuid": 19489,
+      "tls_without_sni": 6216,
+      "reality_without_sni": 568,
+      "bad_host": 21,
+      "bad_port": 23,
+      "url_error:'6fa0ed5f-4c53-4fa9-af42-46fb2ca1278a' does not appear to be an IPv4 or IPv6 address": 3,
+      "url_error:'emailprotected' does not appear to be an IPv4 or IPv6 address": 725
+    }
+  }
+}
