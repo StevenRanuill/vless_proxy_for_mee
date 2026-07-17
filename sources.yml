@@ -66,3 +66,40 @@ sources:
   # VLESS Gists
   - "https://gist.githubusercontent.com/Hido888/fa5375f00d741f2d0032d73721ebd861/raw/vless_subscribe.txt"
   - "https://gist.githubusercontent.com/Hido888/e5fbb3b32bb1a6aad8cc0ae9d1cded79/raw/vless_subscribe.txt"
+
+  # ============================================================
+# Engine Settings
+# ============================================================
+
+settings:
+
+  # Количество одновременных загрузок
+  workers: 20
+
+
+  # Таймаут одного источника
+  timeout: 30
+
+
+  # Повторы при ошибке
+  retries: 3
+
+
+  # Размер чанков
+  chunk_size: 1000
+
+
+  # Сохранять статистику источников
+  source_statistics: true
+
+
+  # Проверять Base64
+  decode_base64: true
+
+
+  # Проверять URL encoding
+  decode_url: true
+
+
+  # Убирать дубли
+  deduplicate: true
