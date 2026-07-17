@@ -1,24 +1,25 @@
 {
   "project": "Skibidi_tualet_proxy",
-  "updated_at": "2026-07-17 08:09:35 UTC",
+  "updated_at": "2026-07-17 16:37:45 UTC",
   "sources": {
     "total": 42,
     "success": 41,
     "failed": 1
   },
   "nodes": {
-    "valid": 103456,
-    "invalid": 45493,
-    "duplicates": 212464
+    "valid": 104238,
+    "invalid": 45920,
+    "duplicates": 207634
   },
   "protocols": {
     "security": {
-      "reality": 25185,
-      "none": 44526,
-      "tls": 33084,
-      "false": 104,
+      "reality": 25407,
+      "none": 44739,
+      "tls": 33428,
+      "none=/@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran": 110,
+      "false": 105,
+      "none=/@vpnine1,--@vpnine1,--@vpnine1,--@vpnine1,--@vpnine1,--@vpnine1,--@vpnine1": 1,
       "xtls": 36,
-      "none=/@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran": 109,
       "reality=/@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn": 1,
       "reality=/@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran": 6,
       "nonehttps://t.me/": 1,
@@ -42,20 +43,20 @@
       "reality=/": 1
     },
     "transport": {
-      "tcp": 39334,
-      "ws": 44305,
-      "grpc": 14141,
-      "xhttp": 5439,
-      "http": 181,
+      "tcp": 39685,
+      "ws": 44654,
+      "grpc": 14177,
+      "xhttp": 5477,
+      "http": 189,
       "kcp": 49,
       "h2": 3,
       "quic": 4
     },
     "errors": {
-      "reality_without_pbk": 3556,
-      "unknown_transport": 15447,
-      "tls_without_sni": 6213,
-      "bad_uuid": 19488,
+      "reality_without_pbk": 3553,
+      "bad_uuid": 19478,
+      "unknown_transport": 15863,
+      "tls_without_sni": 6237,
       "url_error:Invalid IPv6 URL": 17,
       "bad_host": 21,
       "bad_port": 23,
