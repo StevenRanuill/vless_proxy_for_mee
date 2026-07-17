@@ -1,368 +1,1687 @@
-import asyncio
+# ============================================================
+# VLESS FETCHER v2
+# PART 1/4
+# CONFIG + PARSER + VALIDATOR
+# ============================================================
+
 import os
 import re
-import html
-import base64
 import json
-import hashlib
-import shutil
-import aiohttp
-from datetime import datetime, timedelta
+import uuid
+import yaml
+import base64
+import urllib.parse
+from urllib.parse import urlparse, parse_qs
 
-# =====================================================================
-# ЧАСТЬ 1: ГЛОБАЛЬНАЯ КОНФИГУРАЦИЯ И ПАРСЕР ПРОКСИ-СТРОК
-# =====================================================================
 
-CONFIG = {
-    # Регулярное выражение для поиска различных протоколов
-    "PROXY_REGEX": r"(?:vless|vmess|ss|trojan|hysteria2|tuic)://[^\s\"']+",
-    
-    # Режим отладки для детального вывода в консоль GitHub Actions
-    "DEBUG_MODE": True,
-    
-    "MAX_CONCURRENT_FETCH": 15,        # Ограничение параллельного скачивания
-    "MAX_CONCURRENT_LIGHT_CHECK": 60,  # Скорость экспресс-скрининга портов
-    "TIMEOUT_LIGHT_CHECK": 2.0,        # Быстрый таймаут для отсева мертвых нод
-    "MAX_FILE_SIZE": 52428800,         # Защитный лимит в 50 МБ на файл подписки
-    "CHUNK_SIZE": 1000,                # Размер нарезки чанков
-    "CHUNKS_DIR": "raw_chunks", 
-    "HISTORY_FILE": "core/history_blacklist.json",
-    "RETAIN_DAYS": 7,                  # Ротация истории (7 дней)
-    "FILE_STAGE_1": "logs/01_raw_all_downloaded.txt",
-    "FILE_STAGE_2": "logs/02_raw_unique_deduplicated.txt",
-    "FILE_STAGE_3": "logs/all_gathered_raw.txt"
-}
+# ============================================================
+# PATHS
+# ============================================================
 
-# Отладочные счетчики сетевого состояния для дашборда
-LIGHT_STATS = {
-    "scanned": 0,
-    "tcp_timeout": 0,
-    "tcp_refused": 0,
-    "tls_empty_bad": 0,
-    "tspu_drop": 0,
-    "passed": 0
-}
+BASE_DIR = os.path.dirname(
+    os.path.abspath(__file__)
+)
 
-# Вставьте сюда ваши источники подписок (Plain Text / Base64 ссылки)
-ELITE_SUBSCRIPTIONS = [
-"https://raw.githubusercontent.com/kort0881/vpn-vless-configs-russia/refs/heads/main/data/githubmirror/ru-sni/vless.txt",
-    "https://raw.githubusercontent.com/sakha1370/OpenRay/refs/heads/main/output/all_valid_proxies.txt",
-    "https://raw.githubusercontent.com/sevcator/5ubscrpt10n/main/protocols/vl.txt",
-    "https://raw.githubusercontent.com/yitong2333/proxy-minging/refs/heads/main/v2ray.txt",
-    "https://raw.githubusercontent.com/acymz/AutoVPN/refs/heads/main/data/V2.txt",
-    "https://raw.githubusercontent.com/miladtahanian/V2RayCFGDumper/refs/heads/main/sub.txt",
-    "https://raw.githubusercontent.com/roosterkid/openproxylist/main/V2RAY_RAW.txt",
-    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Splitted-By-Protocol/trojan.txt",
-    "https://raw.githubusercontent.com/ShatakVPN/ConfigForge-V2Ray/refs/heads/main/configs/vless.txt",
-    "https://raw.githubusercontent.com/mohamadfg-dev/telegram-v2ray-configs-collector/refs/heads/main/category/vless.txt",
-    "https://raw.githubusercontent.com/mheidari98/.proxy/refs/heads/main/vless",
-    "https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/mixed_iran.txt",
-    "https://raw.githubusercontent.com/VOID-Anonymity/V.O.I.D-VPN_Bypass/refs/heads/main/url_work.txt",
-    "https://raw.githubusercontent.com/MahsaNetConfigTopic/config/refs/heads/main/xray_final.txt",
-    "https://raw.githubusercontent.com/LalatinaHub/Mineral/refs/heads/master/result/nodes",
-    "https://raw.githubusercontent.com/miladtahanian/Config-Collector/refs/heads/main/mixed_iran.txt",
-    "https://raw.githubusercontent.com/Pawdroid/Free-servers/refs/heads/main/sub",
-    "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector_Py/refs/heads/main/sub/Mix/mix.txt",
-    "https://raw.githubusercontent.com/free18/v2ray/refs/heads/main/v.txt",
-    "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/refs/heads/main/sub/mix",
-    "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/refs/heads/main/sub/mix",
-    "https://raw.githubusercontent.com/shabane/kamaji/master/hub/merged.txt",
-    "https://raw.githubusercontent.com/wuqb2i4f/xray-config-toolkit/main/output/base64/mix-uri",
-    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_VLESS_RUS.txt",
-    "https://raw.githubusercontent.com/Mr-Meshky/vify/refs/heads/main/configs/vless.txt",
-    "https://raw.githubusercontent.com/V2RayRoot/V2RayConfig/refs/heads/main/Config/vless.txt",
-    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/WHITE-CIDR-RU-all.txt",
-    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/WHITE-SNI-RU-all.txt",
-    "https://raw.githubusercontent.com/zieng2/wl/refs/heads/main/vless_universal.txt",
-    "https://raw.githubusercontent.com/zieng2/wl/main/vless_lite.txt",
-    "https://raw.githubusercontent.com/ByeWhiteLists/ByeWhiteLists2/refs/heads/main/ByeWhiteLists2.txt",
-    "https://s3c3.001.gpucloud.ru/wlr/wl.txt",
-    "https://etoneya.su/whitelist"
-]
 
-def log_debug(message):
-    """Вывод отладочных сообщений с принудительным сбросом буфера."""
-    if CONFIG["DEBUG_MODE"]:
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        print(f"[ ДЕБАГ ФЕТЧЕРА {timestamp}] {message}", flush=True)
+PARSER_CONFIG = os.path.join(
+    BASE_DIR,
+    "config",
+    "parser.yml"
+)
 
-def parse_proxy_node(node_str):
-    """Низкоуровневый разбор URI на Host и Port для TCP пинга."""
+
+OUTPUT_DIR = os.path.join(
+    BASE_DIR,
+    "output"
+)
+
+
+os.makedirs(
+    OUTPUT_DIR,
+    exist_ok=True
+)
+
+
+# ============================================================
+# LOAD YAML CONFIG
+# ============================================================
+
+def load_parser_config():
+
+    if not os.path.isfile(
+        PARSER_CONFIG
+    ):
+
+        raise FileNotFoundError(
+            f"Config not found: {PARSER_CONFIG}"
+        )
+
+
+    with open(
+        PARSER_CONFIG,
+        "r",
+        encoding="utf-8"
+    ) as file:
+
+        return yaml.safe_load(file)
+
+
+
+# ============================================================
+# VLESS EXTRACTION REGEX
+# ============================================================
+
+VLESS_REGEX = re.compile(
+    r"vless://[^\s\"'<>\]]+",
+    re.IGNORECASE
+)
+
+
+
+# ============================================================
+# UUID VALIDATOR
+# ============================================================
+
+def validate_uuid(value):
+
+    if not value:
+        return False
+
+
     try:
-        if "://" not in node_str: return None, None
-        _, body = node_str.split("://", 1)
-        if "#" in body: body, _ = body.split("#", 1)
-        if "?" in body: body, _ = body.split("?", 1)
-        if "@" in body: _, server_part = body.split("@", 1)
-        else: server_part = body
-        
-        if server_part.startswith("["):
-            if "]" in server_part:
-                host_part, port_part = server_part.split("]", 1)
-                host = host_part + "]"
-                port = port_part.replace(":", "") if ":" in port_part else "443"
-            else: return None, None
-        else:
-            if ":" in server_part: host, port = server_part.split(":", 1)
-            else: host, port = server_part, "443"
-            
-        return host.strip().lower(), int(port) if port else 443
-    except: 
-        return None, None
-# =====================================================================
-# ЧАСТЬ 2: АСИНХРОННЫЙ TCP-СКРИНИНГ И ДЕКОДЕР BASE64
-# =====================================================================
 
-async def light_ping_node(semaphore, node):
-    """Быстрый экспресс-скрининг в облаке: проверка доступности TCP-порта ноды."""
-    async with semaphore:
-        LIGHT_STATS["scanned"] += 1
-        host, port = parse_proxy_node(node)
-        if not host: 
-            LIGHT_STATS["tls_empty_bad"] += 1
+        uuid.UUID(
+            value
+        )
+
+        return True
+
+
+    except Exception:
+
+        return False
+
+
+
+# ============================================================
+# PORT VALIDATOR
+# ============================================================
+
+def validate_port(port):
+
+    try:
+
+        port = int(port)
+
+        return (
+            1 <= port <= 65535
+        )
+
+
+    except Exception:
+
+        return False
+
+
+
+# ============================================================
+# VLESS PARSER
+# ============================================================
+
+def parse_vless(vless):
+
+    try:
+
+        # decode %XX
+        vless = urllib.parse.unquote(
+            vless.strip()
+        )
+
+
+        parsed = urlparse(
+            vless
+        )
+
+
+        if parsed.scheme.lower() != "vless":
+
             return None
-        
-        clean_host = host.strip("[]") if host.startswith("[") else host
-        try:
-            # Открываем чистое TCP соединение для проверки доступности порта
-            reader, writer = await asyncio.wait_for(
-                asyncio.open_connection(clean_host, port), 
-                timeout=CONFIG["TIMEOUT_LIGHT_CHECK"]
+
+
+        query = parse_qs(
+            parsed.query,
+            keep_blank_values=True
+        )
+
+
+        def get(name, default=""):
+
+            return query.get(
+                name,
+                [default]
+            )[0]
+
+
+
+        node = {
+
+            "raw": vless,
+
+            "uuid":
+                parsed.username or "",
+
+
+            "host":
+                parsed.hostname or "",
+
+
+            "port":
+                parsed.port,
+
+
+            "security":
+                get(
+                    "security",
+                    "none"
+                ).lower(),
+
+
+            "network":
+                get(
+                    "type",
+                    "tcp"
+                ).lower(),
+
+
+            "sni":
+                get(
+                    "sni",
+                    ""
+                ),
+
+
+            "pbk":
+                get(
+                    "pbk",
+                    ""
+                ),
+
+
+            "sid":
+                get(
+                    "sid",
+                    ""
+                ),
+
+
+            "flow":
+                get(
+                    "flow",
+                    ""
+                ),
+
+
+            "fp":
+                get(
+                    "fp",
+                    "chrome"
+                ),
+
+
+            "path":
+                get(
+                    "path",
+                    "/"
+                ),
+
+
+            "host_header":
+                get(
+                    "host",
+                    ""
+                ),
+
+
+            "serviceName":
+                get(
+                    "serviceName",
+                    ""
+                ),
+
+
+            "remark":
+
+                urllib.parse.unquote(
+                    parsed.fragment
+                )
+                if parsed.fragment
+                else ""
+
+        }
+
+
+        return node
+
+
+
+    except Exception:
+
+        return None
+
+
+
+
+# ============================================================
+# NODE VALIDATOR
+# ============================================================
+
+def validate_vless(node, config):
+
+
+    errors = []
+
+
+    # -----------------------------
+    # UUID
+    # -----------------------------
+
+    if config["validation"]["uuid"]["required"]:
+
+        if not validate_uuid(
+            node["uuid"]
+        ):
+
+            errors.append(
+                "invalid_uuid"
             )
-            writer.close()
-            try: await writer.wait_closed()
-            except: pass
-            
-            LIGHT_STATS["passed"] += 1
-            return node
-        except asyncio.TimeoutError:
-            LIGHT_STATS["tcp_timeout"] += 1
-            return None
-        except ConnectionRefusedError:
-            LIGHT_STATS["tcp_refused"] += 1
-            return None
-        except Exception:
-            LIGHT_STATS["tspu_drop"] += 1
-            return None
 
-def normalize_github_url(url):
-    """Приведение ссылок GitHub к raw-виду для прямого скачивания."""
-    url = url.strip()
-    if "github.com" in url and "/raw/" in url: 
-        url = url.replace("github.com", "githubusercontent.com").replace("/raw/", "/")
-    elif "github.com" in url and "/blob/" in url: 
-        url = url.replace("github.com", "githubusercontent.com").replace("/blob/", "/")
-    return url
 
-def clean_and_extract(raw_text, url_source=""):
-    """Очистка текста и автоматическое декодирование Base64 подписок."""
-    unescaped = html.unescape(raw_text)
-    if "://" not in unescaped[:200]: 
-        try:
-            b64_clean = "".join(unescaped.split())
-            b64_clean = re.sub(r'[^A-Za-z0-9+/=]', '', b64_clean)
-            b64_clean += "=" * ((4 - len(b64_clean) % 4) % 4)
-            decoded = base64.b64decode(b64_clean).decode('utf-8', errors='ignore')
-            if "://" in decoded: unescaped = decoded
-        except: pass
-        
-    sanitized = []
-    raw_lines = re.split(r'[\s"\'\(\)\{\}\[\]\t\r\n]+', unescaped)
-    valid_protocols = ('vless://', 'vmess://', 'ss://', 'trojan://', 'hysteria2://', 'tuic://', 'shadowsocks://')
-    
-    for line in raw_lines:
-        line_clean = line.strip()
-        if line_clean.startswith(valid_protocols):
-            if line_clean.startswith("shadowsocks://"): 
-                line_clean = line_clean.replace("shadowsocks://", "ss://", 1)
-            sanitized.append(line_clean)
-            
-    log_debug(f"Скачано из {url_source}: {len(sanitized)} строк.")
-    return sanitized
 
-async def fetch_source(semaphore, session, url):
-    """Асинхронный загрузчик контента из удаленного источника."""
-    async with semaphore:
-        norm_url = normalize_github_url(url)
-        try:
-            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-            async with session.get(norm_url, headers=headers, timeout=15) as response:
-                if response.status == 200:
-                    text_content = await response.text(errors='ignore')
-                    if len(text_content) > CONFIG["MAX_FILE_SIZE"]: return []
-                    return clean_and_extract(text_content, norm_url)
-        except: pass
+    # -----------------------------
+    # HOST
+    # -----------------------------
+
+    if not node["host"]:
+
+        errors.append(
+            "empty_host"
+        )
+
+
+
+    # -----------------------------
+    # PORT
+    # -----------------------------
+
+    if not validate_port(
+        node["port"]
+    ):
+
+        errors.append(
+            "invalid_port"
+        )
+
+
+
+    # -----------------------------
+    # SECURITY
+    # -----------------------------
+
+    security = node["security"]
+
+
+
+    if security == "reality":
+
+        reality_cfg = (
+            config["validation"]
+            .get(
+                "reality",
+                {}
+            )
+        )
+
+
+        required = (
+            reality_cfg
+            .get(
+                "required",
+                []
+            )
+        )
+
+
+        for field in required:
+
+            if not node.get(field):
+
+                errors.append(
+                    f"reality_missing_{field}"
+                )
+
+
+
+    elif security == "tls":
+
+        tls_cfg = (
+            config["validation"]
+            .get(
+                "tls",
+                {}
+            )
+        )
+
+
+        required = (
+            tls_cfg
+            .get(
+                "required",
+                []
+            )
+        )
+
+
+        for field in required:
+
+            if not node.get(field):
+
+                errors.append(
+                    f"tls_missing_{field}"
+                )
+
+
+
+    # -----------------------------
+    # NETWORK
+    # -----------------------------
+
+    allowed_networks = (
+
+        config["validation"]
+        .get(
+            "transport",
+            {}
+        )
+        .get(
+            "allowed",
+            []
+        )
+
+    )
+
+
+    if allowed_networks:
+
+        if node["network"] not in allowed_networks:
+
+            errors.append(
+                "unsupported_transport"
+            )
+
+
+
+    # -----------------------------
+    # RESULT
+    # -----------------------------
+
+    return {
+
+        "valid":
+            len(errors) == 0,
+
+
+        "errors":
+            errors,
+
+
+        "node":
+            node
+
+    }
+
+# ============================================================
+# VLESS FETCHER v2
+# PART 2/4
+# SOURCE DOWNLOADER + EXTRACTION
+# ============================================================
+
+import aiohttp
+import asyncio
+
+
+# ============================================================
+# HTTP DOWNLOADER
+# ============================================================
+
+async def download_url(
+    session,
+    url
+):
+
+    try:
+
+        headers = {
+
+            "User-Agent":
+                "Mozilla/5.0 VLESS-Fetcher/2.0"
+
+        }
+
+
+        async with session.get(
+
+            url,
+
+            headers=headers,
+
+            timeout=aiohttp.ClientTimeout(
+                total=20
+            )
+
+        ) as response:
+
+
+            if response.status != 200:
+
+                print(
+                    f"[HTTP ERROR] "
+                    f"{response.status} "
+                    f"{url}"
+                )
+
+                return ""
+
+
+
+            content = await response.text(
+
+                encoding="utf-8",
+
+                errors="ignore"
+
+            )
+
+
+            return content
+
+
+
+    except Exception as exc:
+
+
+        print(
+
+            f"[DOWNLOAD FAILED] "
+            f"{url} | {exc}"
+
+        )
+
+
+        return ""
+
+
+
+
+
+# ============================================================
+# BASE64 DETECTOR
+# ============================================================
+
+def decode_base64_content(
+    content
+):
+
+    try:
+
+
+        cleaned = "".join(
+
+            content.split()
+
+        )
+
+
+        # проверяем минимальную длину
+
+        if len(cleaned) < 20:
+
+            return content
+
+
+
+        # добавляем padding
+
+        padding = len(cleaned) % 4
+
+
+        if padding:
+
+            cleaned += "=" * (
+                4 - padding
+            )
+
+
+
+        decoded = base64.b64decode(
+
+            cleaned
+
+        ).decode(
+
+            "utf-8",
+
+            errors="ignore"
+
+        )
+
+
+        # если после декода есть vless,
+        # значит это подписка
+
+        if "vless://" in decoded.lower():
+
+            return decoded
+
+
+
+    except Exception:
+
+        pass
+
+
+
+    return content
+
+
+
+
+
+# ============================================================
+# NORMALIZE TEXT
+# ============================================================
+
+def normalize_text(
+    text
+):
+
+    if not text:
+
+        return ""
+
+
+
+    # URL decode
+
+    text = urllib.parse.unquote(
+        text
+    )
+
+
+
+    # заменяем мусорные символы
+
+    text = text.replace(
+        "\r",
+        "\n"
+    )
+
+
+
+    return text
+
+
+
+
+
+# ============================================================
+# EXTRACT VLESS LINKS
+# ============================================================
+
+def extract_vless_links(
+    text
+):
+
+    if not text:
+
         return []
-# =====================================================================
-# ЧАСТЬ 3: ОПТИМИЗАЦИЯ ИСТОРИИ, ДАШБОРД И НАРЕЗКА ЧАНКОВ
-# =====================================================================
 
-def optimize_node(proxy_link):
-    """Генерирует стабильный фингерпринт и нормализует имя ноды."""
-    try:
-        node_str = proxy_link.strip().replace('&amp;', '&')
-        if "://" not in node_str: return None, None
-        scheme, body = node_str.split("://", 1)
-        if "#" in body: body_clear, _ = body.split("#", 1)
-        else: body_clear = body
-        temp_body = body_clear
-        if "?" in temp_body: temp_body, _ = temp_body.split("?", 1)
-        if "@" in temp_body: _, server_part = temp_body.split("@", 1)
-        else: server_part = temp_body
-        
-        if server_part.startswith("["):
-            if "]" in server_part:
-                host_part, port_part = server_part.split("]", 1)
-                host = host_part + "]"
-                port = port_part.replace(":", "") if ":" in port_part else "443"
-            else: return None, None
-        else:
-            if ":" in server_part: host, port = server_part.split(":", 1)
-            else: host, port = server_part, "443"
-            
-        port = "".join(filter(str.isdigit, port))
-        port = port if port else "443"
-        host = host.strip().lower()
-        if not host: return None, None
-        
-        fingerprint = f"{host}:{port}"
-        node_hash = hashlib.md5(host.encode()).hexdigest()[:8]
-        return fingerprint, f"{scheme}://{body_clear}#NODE-{node_hash}"
-    except: 
-        return None, None
 
-def load_and_clean_history():
-    """Загрузка истории в облаке и полная очистка записей старше 7 дней."""
-    if not os.path.exists(CONFIG["HISTORY_FILE"]): return {}
-    try:
-        with open(CONFIG["HISTORY_FILE"], "r", encoding="utf-8") as f: 
-            history = json.load(f)
-        now = datetime.now()
-        clean_history = {}
-        cutoff_date = now - timedelta(days=CONFIG["RETAIN_DAYS"])
-        removed_count = 0
-        
-        for fp_hash, data in history.items():
-            last_check_str = data["last_success"] if isinstance(data, dict) else data
-            try:
-                if datetime.strptime(last_check_str, "%Y-%m-%d") > cutoff_date:
-                    clean_history[fp_hash] = {
-                        "last_success": last_check_str,
-                        "first_seen": data.get("first_seen", last_check_str) if isinstance(data, dict) else last_check_str
-                    }
-                else: removed_count += 1
-            except: removed_count += 1
-            
-        log_debug(f"История загружена. Активных меток: {len(clean_history)}. Удалено по 7-дневной ротации: {removed_count}")
-        return clean_history
-    except: return {}
 
-def save_history(history_db):
-    """Сохранение базы истории на диск."""
-    try:
-        os.makedirs(os.path.dirname(CONFIG["HISTORY_FILE"]), exist_ok=True)
-        with open(CONFIG["HISTORY_FILE"], "w", encoding="utf-8") as f: 
-            json.dump(history_db, f, ensure_ascii=False, indent=2)
-    except: pass
+    text = normalize_text(
+        text
+    )
 
-async def async_main():
-    """Главный управляющий метод фетчера."""
-    if not ELITE_SUBSCRIPTIONS: 
-        print("[КРИТИЧЕСКАЯ ОШИБКА] Массив ELITE_SUBSCRIPTIONS пуст!", flush=True)
-        return
-        
-    history_db = load_and_clean_history()
-    stage_1_list = []
-    
-    print(f"[СТАРТ] Скачивание баз. Источников в списке: {len(ELITE_SUBSCRIPTIONS)}", flush=True)
-    semaphore = asyncio.Semaphore(CONFIG["MAX_CONCURRENT_FETCH"])
-    
+
+    # пробуем base64
+
+    decoded = decode_base64_content(
+        text
+    )
+
+
+    if decoded != text:
+
+        text = decoded
+
+
+
+    matches = VLESS_REGEX.findall(
+        text
+    )
+
+
+
+    result = []
+
+
+    for item in matches:
+
+
+        # убираем хвостовые символы
+
+        item = item.rstrip(
+
+            ".,;)]}>\"'"
+
+        )
+
+
+        if item.lower().startswith(
+
+            "vless://"
+
+        ):
+
+            result.append(
+                item
+            )
+
+
+
+    return result
+
+
+
+
+
+# ============================================================
+# LOAD ALL SOURCES
+# ============================================================
+
+async def collect_sources(
+    config
+):
+
+    sources = []
+
+
+
+    source_cfg = (
+
+        config
+        .get(
+            "sources",
+            {}
+        )
+
+    )
+
+
+
+    # --------------------------------------------------------
+    # URL SOURCES
+    # --------------------------------------------------------
+
+    url_list = (
+
+        source_cfg
+        .get(
+            "urls",
+            []
+        )
+
+    )
+
+
+    if url_list:
+
+        sources.extend(
+            url_list
+        )
+
+
+
+    # --------------------------------------------------------
+    # GITHUB SOURCES
+    # --------------------------------------------------------
+
+    github_cfg = (
+
+        source_cfg
+        .get(
+            "github",
+            {}
+        )
+
+    )
+
+
+    if github_cfg.get(
+        "enabled",
+        False
+    ):
+
+
+        sources.extend(
+
+            github_cfg
+            .get(
+                "urls",
+                []
+            )
+
+        )
+
+
+
+    # --------------------------------------------------------
+    # TELEGRAM SOURCES
+    # --------------------------------------------------------
+
+    telegram_cfg = (
+
+        source_cfg
+        .get(
+            "telegram",
+            {}
+        )
+
+    )
+
+
+    if telegram_cfg.get(
+        "enabled",
+        False
+    ):
+
+
+        sources.extend(
+
+            telegram_cfg
+            .get(
+                "urls",
+                []
+            )
+
+        )
+
+
+
+    return sources
+
+
+
+
+
+# ============================================================
+# FETCH AND EXTRACT
+# ============================================================
+
+async def fetch_all_nodes(
+    config
+):
+
+
+    urls = await collect_sources(
+        config
+    )
+
+
+    if not urls:
+
+        print(
+            "[WARNING] No sources found"
+        )
+
+        return []
+
+
+
+    all_nodes = []
+
+
+
     async with aiohttp.ClientSession() as session:
-        tasks = [fetch_source(semaphore, session, url) for url in ELITE_SUBSCRIPTIONS]
-        results = await asyncio.gather(*tasks)
-        for nodes in results: stage_1_list.extend(nodes)
-        
-    os.makedirs("logs", exist_ok=True)
-    with open(CONFIG["FILE_STAGE_1"], "w", encoding="utf-8") as f: 
-        f.write("\n".join(stage_1_list))
-        
-    seen_nodes_hashes = set()
-    stage_2_list = []
-    pre_filtered_pool = []
-    current_date_str = datetime.now().strftime("%Y-%m-%d")
-    dup_count = 0
-    
-    for node in stage_1_list:
-        fp, clean_node = optimize_node(node)
-        if fp and clean_node:
-            # Делаем хэш от ВСЕЙ уникальной ссылки, а не только от host:port
-            node_string_hash = hashlib.md5(clean_node.encode('utf-8')).hexdigest()
-            
-            if node_string_hash not in seen_nodes_hashes:
-                seen_nodes_hashes.add(node_string_hash)
-                stage_2_list.append(clean_node)
-                pre_filtered_pool.append(clean_node)
-            else: 
-                dup_count += 1
 
-    log_debug(f"Удалено дубликатов на Шаге 2: {dup_count} шт.")
-    
-    print(f" [ОБЛАКО] Запуск легкого экспресс-теста для {len(pre_filtered_pool)} уникальных нод...", flush=True)
-    
-    check_semaphore = asyncio.Semaphore(CONFIG["MAX_CONCURRENT_LIGHT_CHECK"])
-    check_tasks = [light_ping_node(check_semaphore, node) for node in pre_filtered_pool]
-    check_results = await asyncio.gather(*check_tasks)
-    final_pool = [node for node in check_results if node is not None]
-    
-    # Синхронизация и дозапись истории по стандарту 7 дней
-    for node in final_pool:
-        fp, _ = optimize_node(node)
-        if fp:
-            fp_hash = hashlib.md5(fp.encode()).hexdigest()
-            if fp_hash in history_db:
-                if isinstance(history_db[fp_hash], dict): 
-                    history_db[fp_hash]["last_success"] = current_date_str
-                else: 
-                    history_db[fp_hash] = {"last_success": current_date_str, "first_seen": history_db[fp_hash]}
-            else: 
-                history_db[fp_hash] = {"last_success": current_date_str, "first_seen": current_date_str}
-                
-    save_history(history_db)
-    with open(CONFIG["FILE_STAGE_3"], "w", encoding="utf-8") as f: 
-        f.write("\n".join(final_pool))
-        
-    # ИТОГОВЫЙ РАСШИРЕННЫЙ ДЕБАГ-ДАШБОРД В КОНСОЛЬ БИЛДА GITHUB ACTIONS
-    print("\n" + "="*60)
-    print(" ИТОГОВЫЙ ОТЧЕТ ОБЛАЧНОГО СКРИНИНГА ПОРТОВ:")
-    print(f" Скачано сырых строк всего: {len(stage_1_list)}")
-    print(f" ❌Удалено строк-дубликатов: {dup_count}")
-    print(f" Всего отправлено на экспресс-тест: {LIGHT_STATS['scanned']}")
-    print("-"*60)
-    print(f" Падение по таймауту TCP порта: {LIGHT_STATS['tcp_timeout']}")
-    print(f" Отклонено сервером (Connection Refused): {LIGHT_STATS['tcp_refused']}")
-    print(f" Сетевой дроп / Неизвестные сбои: {LIGHT_STATS['tspu_drop']}")
-    print(f" Битый формат / Невалидные прокси: {LIGHT_STATS['tls_empty_bad']}")
-    print("-"*60)
-    print(f" Успешно прошли скрининг (Передано на ПК): {LIGHT_STATS['passed']}")
-    print("="*60 + "\n", flush=True)
-    
-    # Принудительно чистим старые чанки перед генерацией новых
-    if os.path.exists(CONFIG["CHUNKS_DIR"]):
-        try: shutil.rmtree(CONFIG["CHUNKS_DIR"])
-        except: pass
-    os.makedirs(CONFIG["CHUNKS_DIR"], exist_ok=True)
-    
-    if not final_pool:
-        log_debug("Пул проверки пуст. Создаем пустой маркер-чанк.")
-        with open(os.path.join(CONFIG["CHUNKS_DIR"], "chunk_empty.txt"), "w", encoding="utf-8") as f: 
-            f.write("")
-    else:
-        chunk_size = CONFIG["CHUNK_SIZE"]
-        chunks = [final_pool[i:i + chunk_size] for i in range(0, len(final_pool), chunk_size)]
-        log_debug(f"Нарезка пула завершена. Всего создано чанков: {len(chunks)}")
-        for idx, chunk in enumerate(chunks, 1):
-            with open(os.path.join(CONFIG["CHUNKS_DIR"], f"chunk_{idx:03d}.txt"), "w", encoding="utf-8") as f: 
-                f.write("\n".join(chunk))
+
+        tasks = [
+
+            download_url(
+
+                session,
+
+                url
+
+            )
+
+            for url in urls
+
+        ]
+
+
+
+        responses = await asyncio.gather(
+            *tasks
+        )
+
+
+
+        for source, content in zip(
+
+            urls,
+
+            responses
+
+        ):
+
+
+            if not content:
+
+                continue
+
+
+
+            found = extract_vless_links(
+
+                content
+
+            )
+
+
+            print(
+
+                f"[SOURCE] "
+                f"{source} -> "
+                f"{len(found)} nodes"
+
+            )
+
+
+            all_nodes.extend(
+                found
+            )
+
+
+
+    return all_nodes
+
+# ============================================================
+# VLESS FETCHER v2
+# PART 3/4
+# VALIDATION + DEDUP + OUTPUT
+# ============================================================
+
+
+# ============================================================
+# OUTPUT PATHS
+# ============================================================
+
+VALID_FILE = os.path.join(
+    OUTPUT_DIR,
+    "valid_vless.txt"
+)
+
+
+INVALID_FILE = os.path.join(
+    OUTPUT_DIR,
+    "invalid_vless.txt"
+)
+
+
+DUPLICATE_FILE = os.path.join(
+    OUTPUT_DIR,
+    "duplicates.txt"
+)
+
+
+STATS_FILE = os.path.join(
+    OUTPUT_DIR,
+    "stats.json"
+)
+
+
+CHUNKS_DIR = os.path.join(
+    OUTPUT_DIR,
+    "chunks"
+)
+
+
+os.makedirs(
+    CHUNKS_DIR,
+    exist_ok=True
+)
+
+
+
+# ============================================================
+# NORMALIZE NODE
+# ============================================================
+
+def normalize_vless(
+    vless
+):
+
+    return (
+        urllib.parse.unquote(
+            vless
+        )
+        .strip()
+    )
+
+
+
+# ============================================================
+# PROCESS NODES
+# ============================================================
+
+def process_nodes(
+    raw_nodes,
+    config
+):
+
+    valid = []
+
+    invalid = []
+
+    duplicates = []
+
+
+    seen = set()
+
+
+
+    for raw in raw_nodes:
+
+
+        normalized = normalize_vless(
+            raw
+        )
+
+
+        # -----------------------------
+        # DUPLICATES
+        # -----------------------------
+
+        if normalized in seen:
+
+            duplicates.append(
+                normalized
+            )
+
+            continue
+
+
+        seen.add(
+            normalized
+        )
+
+
+
+        # -----------------------------
+        # PARSE
+        # -----------------------------
+
+        node = parse_vless(
+            normalized
+        )
+
+
+        if not node:
+
+
+            invalid.append({
+
+                "node":
+                    normalized,
+
+                "reason":
+                    [
+                        "parse_failed"
+                    ]
+
+            })
+
+
+            continue
+
+
+
+
+        # -----------------------------
+        # VALIDATE
+        # -----------------------------
+
+        result = validate_vless(
+
+            node,
+
+            config
+
+        )
+
+
+
+        if result["valid"]:
+
+
+            valid.append(
+                normalized
+            )
+
+
+        else:
+
+
+            invalid.append({
+
+                "node":
+                    normalized,
+
+
+                "reason":
+                    result["errors"]
+
+            })
+
+
+
+    return {
+
+        "valid":
+            valid,
+
+
+        "invalid":
+            invalid,
+
+
+        "duplicates":
+            duplicates
+
+    }
+
+
+
+
+
+# ============================================================
+# SAVE TEXT LIST
+# ============================================================
+
+def save_lines(
+    path,
+    lines
+):
+
+    with open(
+
+        path,
+
+        "w",
+
+        encoding="utf-8"
+
+    ) as file:
+
+
+        for line in lines:
+
+            file.write(
+
+                line +
+
+                "\n"
+
+            )
+
+
+
+# ============================================================
+# SAVE INVALID
+# ============================================================
+
+def save_invalid(
+    path,
+    invalid
+):
+
+    with open(
+
+        path,
+
+        "w",
+
+        encoding="utf-8"
+
+    ) as file:
+
+
+        for item in invalid:
+
+
+            file.write(
+
+                "ERROR: "
+
+                +
+
+                ",".join(
+                    item["reason"]
+                )
+
+                +
+
+                "\n"
+
+            )
+
+
+            file.write(
+
+                item["node"]
+
+                +
+
+                "\n\n"
+
+            )
+
+
+
+
+
+# ============================================================
+# CREATE CHUNKS
+# ============================================================
+
+def create_chunks(
+    nodes,
+    chunk_size=1000
+):
+
+
+    # очистка старых чанков
+
+    for filename in os.listdir(
+
+        CHUNKS_DIR
+
+    ):
+
+        if filename.startswith(
+
+            "chunk_"
+
+        ):
+
+            os.remove(
+
+                os.path.join(
+
+                    CHUNKS_DIR,
+
+                    filename
+
+                )
+
+            )
+
+
+
+    counter = 1
+
+
+
+    for index in range(
+
+        0,
+
+        len(nodes),
+
+        chunk_size
+
+    ):
+
+
+        chunk = nodes[
+
+            index:
+
+            index +
+
+            chunk_size
+
+        ]
+
+
+
+        filename = os.path.join(
+
+            CHUNKS_DIR,
+
+            f"chunk_{counter:03d}.txt"
+
+        )
+
+
+
+        save_lines(
+
+            filename,
+
+            chunk
+
+        )
+
+
+        counter += 1
+
+
+
+    return counter - 1
+
+
+
+
+
+# ============================================================
+# SAVE STATISTICS
+# ============================================================
+
+def save_stats(
+    stats
+):
+
+    with open(
+
+        STATS_FILE,
+
+        "w",
+
+        encoding="utf-8"
+
+    ) as file:
+
+
+        json.dump(
+
+            stats,
+
+            file,
+
+            indent=4,
+
+            ensure_ascii=False
+
+        )
+
+
+
+
+
+# ============================================================
+# BUILD DATABASE
+# ============================================================
+
+def build_database(
+    raw_nodes,
+    config
+):
+
+
+    result = process_nodes(
+
+        raw_nodes,
+
+        config
+
+    )
+
+
+
+    save_lines(
+
+        VALID_FILE,
+
+        result["valid"]
+
+    )
+
+
+
+    save_invalid(
+
+        INVALID_FILE,
+
+        result["invalid"]
+
+    )
+
+
+
+    save_lines(
+
+        DUPLICATE_FILE,
+
+        result["duplicates"]
+
+    )
+
+
+
+    chunk_size = (
+
+        config
+        .get(
+            "output",
+            {}
+        )
+        .get(
+            "chunks",
+            {}
+        )
+        .get(
+            "size",
+            1000
+        )
+
+    )
+
+
+
+    chunks = create_chunks(
+
+        result["valid"],
+
+        chunk_size
+
+    )
+
+
+
+    stats = {
+
+
+        "raw_found":
+
+            len(raw_nodes),
+
+
+
+        "valid":
+
+            len(result["valid"]),
+
+
+
+        "invalid":
+
+            len(result["invalid"]),
+
+
+
+        "duplicates":
+
+            len(result["duplicates"]),
+
+
+
+        "chunks":
+
+            chunks
+
+    }
+
+
+
+    save_stats(
+
+        stats
+
+    )
+
+
+
+    return stats
+
+# ============================================================
+# VLESS FETCHER v2
+# PART 4/4
+# MAIN + EXECUTION
+# ============================================================
+
+
+# ============================================================
+# PRINT STATS
+# ============================================================
+
+def print_stats(
+    stats
+):
+
+    print()
+
+    print(
+        "=" * 60
+    )
+
+    print(
+        "VLESS FETCHER FINISHED"
+    )
+
+    print(
+        "=" * 60
+    )
+
+
+    print(
+
+        f"Raw found:      "
+        f"{stats['raw_found']}"
+
+    )
+
+
+    print(
+
+        f"Valid:          "
+        f"{stats['valid']}"
+
+    )
+
+
+    print(
+
+        f"Invalid:        "
+        f"{stats['invalid']}"
+
+    )
+
+
+    print(
+
+        f"Duplicates:     "
+        f"{stats['duplicates']}"
+
+    )
+
+
+    print(
+
+        f"Chunks created: "
+        f"{stats['chunks']}"
+
+    )
+
+
+    print(
+        "=" * 60
+    )
+
+
+
+
+
+# ============================================================
+# MAIN
+# ============================================================
+
+async def main():
+
+
+    try:
+
+
+        print()
+
+        print(
+            "=" * 60
+        )
+
+        print(
+            "VLESS FETCHER v2 STARTED"
+        )
+
+        print(
+            "=" * 60
+        )
+
+
+
+        # --------------------------------
+        # LOAD CONFIG
+        # --------------------------------
+
+        config = load_parser_config()
+
+
+
+        print(
+
+            "[OK] parser.yml loaded"
+
+        )
+
+
+
+        # --------------------------------
+        # FETCH SOURCES
+        # --------------------------------
+
+        raw_nodes = await fetch_all_nodes(
+
+            config
+
+        )
+
+
+
+        print()
+
+        print(
+
+            f"[INFO] Extracted nodes: "
+            f"{len(raw_nodes)}"
+
+        )
+
+
+
+        if not raw_nodes:
+
+
+            print(
+
+                "[WARNING] No VLESS nodes found"
+
+            )
+
+
+            return
+
+
+
+        # --------------------------------
+        # BUILD DATABASE
+        # --------------------------------
+
+        stats = build_database(
+
+            raw_nodes,
+
+            config
+
+        )
+
+
+
+        # --------------------------------
+        # OUTPUT
+        # --------------------------------
+
+        print_stats(
+
+            stats
+
+        )
+
+
+
+    except FileNotFoundError as exc:
+
+
+        print(
+
+            "[CONFIG ERROR]",
+
+            exc
+
+        )
+
+
+        raise
+
+
+
+    except Exception as exc:
+
+
+        print()
+
+        print(
+
+            "[FATAL ERROR]",
+
+            str(exc)
+
+        )
+
+
+        raise
+
+
+
+
+
+# ============================================================
+# ENTRY POINT
+# ============================================================
 
 if __name__ == "__main__":
-    asyncio.run(async_main())
+
+
+    asyncio.run(
+
+        main()
+
+    )
