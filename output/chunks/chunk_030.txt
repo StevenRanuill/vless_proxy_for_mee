@@ -1,3 +1,7 @@
+vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@138.197.219.118:59483?encryption=none&security=auto&type=grpc&serviceName=&flow=&sni=&fp=chrome#
+vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@138.197.219.99:59483?encryption=none&security=auto&type=grpc&serviceName=&flow=&sni=&fp=chrome#
+vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@138.197.220.107:59483?encryption=none&security=none&sni=&type=grpc&host=&path=#
+vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@138.197.221.25:59483?encryption=none&security=none&sni=&type=grpc&host=&path=#
 vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@138.197.221.27:59483?encryption=none&security=auto&type=grpc&serviceName=&flow=&sni=&fp=chrome#
 vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@138.197.222.252:59483?encryption=none&security=auto&type=grpc&serviceName=&flow=&sni=&fp=chrome#
 vless://47d7d5eb-55e6-4085-a155-bdf3fcc428f6@138.197.223.226:59483?encryption=none&security=auto&type=grpc&serviceName=&flow=&sni=&fp=chrome#
@@ -994,7 +998,3 @@ vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.41.208.45:443?allowInsecure=0&s
 vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.41.208.45:443?security=tls&sni=aw.ylks.xyz&type=ws&path=%2F%3Fed%3D2048#
 vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.41.211.28:443?allowInsecure=0&sni=ax.ylks.xyz&type=ws&host=ax.ylks.xyz&path=/?ed=2048security=tls#15|US_speednode_0049
 vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.41.211.28:443?security=tls&sni=ax.ylks.xyz&type=ws&path=%2F%3Fed%3D2048#
-vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.41.212.228:443?security=tls&sni=ay.ylks.xyz&type=ws&host=ay.ylks.xyz&path=%2F%3Fed%3D2048#
-vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.41.214.64:443?security=tls&sni=aj.ylks.xyz&type=ws&host=aj.ylks.xyz&path=%2F%3Fed%3D2048#
-vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.41.215.160:443?security=tls&sni=an.ylks.xyz&type=ws&host=an.ylks.xyz&path=%2F%3Fed%3D2048#
-vless://48198295-b7ba-4b5c-8d85-085d55a6c869@198.41.215.221:443?security=tls&sni=al.ylks.xyz&type=ws&host=al.ylks.xyz&path=%2F%3Fed%3D2048#
