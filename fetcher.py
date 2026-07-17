@@ -1,66 +1,73 @@
+# ============================================================
+# Skibidi_tualet_proxy
+# fetcher.py v2
+#
+# Part 1/4
+# Config + Parallel Source Loader
+# ============================================================
+
+
 from __future__ import annotations
 
 import base64
 import hashlib
-import ipaddress
 import json
 import logging
 import re
-import sys
-from collections import Counter
+import time
+
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    as_completed,
+)
+
 from pathlib import Path
+
 from typing import Any
-from urllib.parse import parse_qs, unquote, urlparse
+
+from urllib.parse import (
+    urlparse,
+    parse_qs,
+    unquote,
+)
 
 import requests
 import yaml
 
 
+
 # ============================================================
-# Skibidi_tualet_proxy
-# VLESS Subscription Fetcher
+# Project
 # ============================================================
 
 
 PROJECT_NAME = "Skibidi_tualet_proxy"
 
+
 BASE_DIR = Path(__file__).resolve().parent
+
 
 SOURCES_FILE = BASE_DIR / "sources.yml"
 
+
 OUTPUT_DIR = BASE_DIR / "output"
-CHUNKS_DIR = OUTPUT_DIR / "chunks"
+
 
 VALID_FILE = OUTPUT_DIR / "valid_vless.txt"
+
 INVALID_FILE = OUTPUT_DIR / "invalid_vless.txt"
+
 DUPLICATES_FILE = OUTPUT_DIR / "duplicates.txt"
+
 STATS_FILE = OUTPUT_DIR / "stats.json"
 
-
-DEFAULT_TIMEOUT = 30
-
-USER_AGENT = (
-    "Mozilla/5.0 "
-    "(Windows NT 10.0; Win64; x64) "
-    "AppleWebKit/537.36 "
-    "(KHTML, like Gecko) "
-    "Chrome/131.0 Safari/537.36"
+SOURCES_STATS_FILE = (
+    OUTPUT_DIR / "sources_stats.json"
 )
 
 
-VLESS_PATTERN = re.compile(
-    r"vless://[^\s<>'\"`]+",
-    re.IGNORECASE,
-)
+CHUNKS_DIR = OUTPUT_DIR / "chunks"
 
-
-UUID_PATTERN = re.compile(
-    r"^[0-9a-fA-F]{8}-"
-    r"[0-9a-fA-F]{4}-"
-    r"[0-9a-fA-F]{4}-"
-    r"[0-9a-fA-F]{4}-"
-    r"[0-9a-fA-F]{12}$"
-)
 
 
 # ============================================================
@@ -70,544 +77,1542 @@ UUID_PATTERN = re.compile(
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s",
+    format=(
+        "%(asctime)s | "
+        "%(levelname)s | "
+        "%(message)s"
+    ),
 )
 
-logger = logging.getLogger(PROJECT_NAME)
+
+logger = logging.getLogger(
+    PROJECT_NAME
+)
+
 
 
 # ============================================================
-# Helpers
+# Default settings
 # ============================================================
 
 
-def ensure_directories() -> None:
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    CHUNKS_DIR.mkdir(parents=True, exist_ok=True)
+DEFAULT_SETTINGS = {
 
 
-def load_yaml(path: Path) -> dict[str, Any]:
-    if not path.exists():
-        raise FileNotFoundError(f"Configuration file not found: {path}")
-
-    with path.open("r", encoding="utf-8") as file:
-        data = yaml.safe_load(file)
-
-    if data is None:
-        return {}
-
-    if not isinstance(data, dict):
-        raise ValueError(f"YAML root must be an object: {path}")
-
-    return data
+    "workers": 20,
 
 
-def clean_text(value: str) -> str:
-    value = value.strip()
-    value = value.replace("\r", "")
-    value = value.replace("\n", "")
-    return value
+    "timeout": 30,
 
 
-def normalize_uri(uri: str) -> str:
-    uri = clean_text(uri)
-
-    uri = uri.rstrip(".,;:!?)]}>")
-
-    return uri
+    "retries": 3,
 
 
-def is_valid_uuid(value: str) -> bool:
-    return bool(UUID_PATTERN.fullmatch(value))
+    "retry_delay": 5,
 
 
-def is_valid_port(value: str) -> bool:
-    try:
-        port = int(value)
-    except (TypeError, ValueError):
-        return False
-
-    return 1 <= port <= 65535
+    "chunk_size": 1000,
 
 
-def is_valid_host(host: str) -> bool:
-    if not host:
-        return False
-
-    host = host.strip("[]")
-
-    try:
-        ipaddress.ip_address(host)
-        return True
-    except ValueError:
-        pass
-
-    if len(host) > 253:
-        return False
-
-    if " " in host:
-        return False
-
-    if "." not in host and host.lower() != "localhost":
-        return False
-
-    labels = host.split(".")
-
-    for label in labels:
-        if not label:
-            return False
-
-        if len(label) > 63:
-            return False
-
-        if label.startswith("-") or label.endswith("-"):
-            return False
-
-        if not re.fullmatch(r"[A-Za-z0-9-]+", label):
-            return False
-
-    return True
+    "decode_base64": True,
 
 
-def decode_base64_text(value: str) -> str | None:
-    value = value.strip()
+    "decode_url": True,
 
-    if not value:
+
+    "deduplicate": True,
+
+
+}
+
+
+
+# ============================================================
+# Prepare folders
+# ============================================================
+
+
+def prepare_directories():
+
+    OUTPUT_DIR.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+
+    CHUNKS_DIR.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+
+
+# ============================================================
+# YAML loader
+# ============================================================
+
+
+def load_config() -> dict[str, Any]:
+
+
+    if not SOURCES_FILE.exists():
+
+        raise FileNotFoundError(
+            "sources.yml not found"
+        )
+
+
+    with open(
+        SOURCES_FILE,
+        "r",
+        encoding="utf-8",
+    ) as file:
+
+        config = yaml.safe_load(file)
+
+
+    if not isinstance(
+        config,
+        dict,
+    ):
+
+        config = {}
+
+
+    return config
+
+
+
+# ============================================================
+# Settings
+# ============================================================
+
+
+def get_settings(
+    config: dict[str, Any],
+):
+
+    settings = DEFAULT_SETTINGS.copy()
+
+
+    user_settings = (
+        config.get(
+            "settings",
+            {}
+        )
+    )
+
+
+    if isinstance(
+        user_settings,
+        dict,
+    ):
+
+        settings.update(
+            user_settings
+        )
+
+
+    return settings
+
+
+
+# ============================================================
+# Sources
+# ============================================================
+
+
+def get_sources(
+    config: dict[str, Any],
+):
+
+    sources = (
+        config.get(
+            "sources",
+            []
+        )
+    )
+
+
+    if not isinstance(
+        sources,
+        list,
+    ):
+
+        return []
+
+
+    result = []
+
+
+    for source in sources:
+
+
+        if isinstance(
+            source,
+            str,
+        ):
+
+            result.append(
+                source.strip()
+            )
+
+
+    return [
+        s
+        for s in result
+        if s
+    ]
+
+
+
+# ============================================================
+# HTTP session
+# ============================================================
+
+
+def create_session():
+
+    session = requests.Session()
+
+
+    session.headers.update(
+        {
+
+            "User-Agent":
+            (
+                "Skibidi_tualet_proxy/"
+                "2.0"
+            ),
+
+
+            "Accept":
+            "*/*",
+
+        }
+    )
+
+
+    return session
+
+
+
+# ============================================================
+# Download one source
+# ============================================================
+
+
+def download_source(
+    url: str,
+    settings: dict[str, Any],
+):
+
+
+    result = {
+
+
+        "url": url,
+
+
+        "status": "failed",
+
+
+        "time": 0,
+
+
+        "bytes": 0,
+
+
+        "content": "",
+
+
+        "error": None,
+
+
+    }
+
+
+    start = time.time()
+
+
+    retries = int(
+        settings.get(
+            "retries",
+            3,
+        )
+    )
+
+
+    timeout = int(
+        settings.get(
+            "timeout",
+            30,
+        )
+    )
+
+
+    delay = int(
+        settings.get(
+            "retry_delay",
+            5,
+        )
+    )
+
+
+
+    for attempt in range(
+        1,
+        retries + 1,
+    ):
+
+
+        try:
+
+            session = create_session()
+
+
+            response = session.get(
+                url,
+                timeout=timeout,
+                allow_redirects=True,
+            )
+
+
+            response.raise_for_status()
+
+
+            content = response.text
+
+
+
+            result.update(
+                {
+
+                    "status": "success",
+
+
+                    "content": content,
+
+
+                    "bytes": len(
+                        content.encode(
+                            "utf-8",
+                            errors="ignore",
+                        )
+                    ),
+
+                }
+            )
+
+
+            break
+
+
+
+        except Exception as error:
+
+
+            result["error"] = str(
+                error
+            )
+
+
+            if attempt < retries:
+
+                time.sleep(
+                    delay
+                )
+
+
+
+    result["time"] = round(
+        time.time() - start,
+        3,
+    )
+
+
+    return result
+
+
+
+# ============================================================
+# Parallel downloader
+# ============================================================
+
+
+def download_all_sources(
+    sources,
+    settings,
+):
+
+
+    workers = int(
+        settings.get(
+            "workers",
+            20,
+        )
+    )
+
+
+    results = []
+
+
+
+    logger.info(
+        "Downloading %s sources with %s workers",
+        len(sources),
+        workers,
+    )
+
+
+
+    with ThreadPoolExecutor(
+        max_workers=workers
+    ) as executor:
+
+
+        tasks = [
+
+            executor.submit(
+                download_source,
+                url,
+                settings,
+            )
+
+            for url in sources
+
+        ]
+
+
+
+        for future in as_completed(
+            tasks
+        ):
+
+
+            result = future.result()
+
+
+            results.append(
+                result
+            )
+
+
+            if result["status"] == "success":
+
+
+                logger.info(
+                    "OK %s (%s bytes)",
+                    result["url"],
+                    result["bytes"],
+                )
+
+
+            else:
+
+
+                logger.warning(
+                    "FAIL %s : %s",
+                    result["url"],
+                    result["error"],
+                )
+
+
+
+    return results
+
+# ============================================================
+# Part 2/4
+# Decoder + VLESS Extractor
+# ============================================================
+
+
+# ============================================================
+# Base64 decoder
+# ============================================================
+
+
+def decode_base64(
+    text: str,
+):
+
+    if not text:
+
         return None
 
-    padding = "=" * (-len(value) % 4)
+
+    value = (
+        text
+        .strip()
+        .replace(
+            "\n",
+            "",
+        )
+        .replace(
+            "\r",
+            "",
+        )
+    )
+
+
+    padding = (
+        "="
+        *
+        (
+            -len(value)
+            %
+            4
+        )
+    )
+
 
     try:
+
         decoded = base64.b64decode(
             value + padding,
             validate=False,
         )
 
-        return decoded.decode("utf-8", errors="ignore")
+
+        return decoded.decode(
+            "utf-8",
+            errors="ignore",
+        )
+
 
     except Exception:
+
         return None
 
 
-def extract_vless_uris(text: str) -> list[str]:
+
+# ============================================================
+# URL decoder
+# ============================================================
+
+
+def decode_url_text(
+    text: str,
+):
+
     if not text:
-        return []
 
-    found: list[str] = []
-
-    for match in VLESS_PATTERN.finditer(text):
-        uri = normalize_uri(match.group(0))
-
-        if uri:
-            found.append(uri)
-
-    return found
+        return text
 
 
-def extract_from_text(text: str) -> list[str]:
-    results = extract_vless_uris(text)
+    try:
 
-    if results:
-        return results
-
-    decoded = decode_base64_text(text)
-
-    if decoded:
-        return extract_vless_uris(decoded)
-
-    return []
-
-
-def fingerprint_uri(uri: str) -> str:
-    parsed = urlparse(uri)
-
-    query = parse_qs(
-        parsed.query,
-        keep_blank_values=True,
-    )
-
-    fingerprint_data = {
-        "uuid": unquote(parsed.username or "").lower(),
-        "host": (parsed.hostname or "").lower(),
-        "port": parsed.port or 0,
-        "query": {
-            key: sorted(values)
-            for key, values in sorted(query.items())
-        },
-    }
-
-    raw = json.dumps(
-        fingerprint_data,
-        ensure_ascii=False,
-        sort_keys=True,
-    )
-
-    return hashlib.sha256(
-        raw.encode("utf-8")
-    ).hexdigest()
-
-
-# ============================================================
-# Source Loading
-# ============================================================
-
-
-def get_sources(config: dict[str, Any]) -> list[dict[str, Any]]:
-    sources = config.get("sources", [])
-
-    if isinstance(sources, dict):
-        normalized = []
-
-        for name, value in sources.items():
-            if isinstance(value, str):
-                normalized.append(
-                    {
-                        "name": name,
-                        "url": value,
-                        "enabled": True,
-                    }
-                )
-
-            elif isinstance(value, dict):
-                item = dict(value)
-                item.setdefault("name", name)
-                normalized.append(item)
-
-        return normalized
-
-    if not isinstance(sources, list):
-        return []
-
-    result = []
-
-    for index, source in enumerate(sources, start=1):
-
-        if isinstance(source, str):
-            result.append(
-                {
-                    "name": f"source_{index}",
-                    "url": source,
-                    "enabled": True,
-                }
-            )
-
-        elif isinstance(source, dict):
-            item = dict(source)
-            item.setdefault(
-                "name",
-                f"source_{index}",
-            )
-            result.append(item)
-
-    return result
-
-
-# ============================================================
-# HTTP Fetching
-# ============================================================
-
-
-def fetch_source(
-    session: requests.Session,
-    source: dict[str, Any],
-) -> tuple[str, str]:
-
-    name = str(
-        source.get(
-            "name",
-            "unknown",
+        return unquote(
+            text
         )
-    )
 
-    url = str(
-        source.get(
-            "url",
+
+    except Exception:
+
+        return text
+
+
+
+# ============================================================
+# Remove garbage
+# ============================================================
+
+
+def clean_text(
+    text: str,
+):
+
+    if not text:
+
+        return ""
+
+
+    text = (
+        text
+        .replace(
+            "\r",
             "",
         )
-    ).strip()
-
-    if not url:
-        raise ValueError("Source URL is empty")
-
-    timeout = source.get(
-        "timeout",
-        DEFAULT_TIMEOUT,
+        .replace(
+            "\x00",
+            "",
+        )
     )
 
-    try:
-        timeout = int(timeout)
-    except (TypeError, ValueError):
-        timeout = DEFAULT_TIMEOUT
 
-    response = session.get(
-        url,
-        timeout=timeout,
-        allow_redirects=True,
-    )
+    return text.strip()
 
-    response.raise_for_status()
-
-    return name, response.text
 
 
 # ============================================================
-# VLESS Validation
+# VLESS pattern
 # ============================================================
 
 
-def validate_vless_uri(
+VLESS_PATTERN = re.compile(
+
+    r"vless://[^\s\"'<>]+",
+
+    re.IGNORECASE,
+
+)
+
+
+
+# ============================================================
+# Extract VLESS from text
+# ============================================================
+
+
+def extract_vless(
+    text: str,
+    settings: dict[str, Any],
+):
+
+
+    if not text:
+
+        return []
+
+
+
+    results = []
+
+
+
+    variants = [
+
+        text
+
+    ]
+
+
+
+    # URL decode
+
+    if settings.get(
+        "decode_url",
+        True,
+    ):
+
+        decoded_url = decode_url_text(
+            text
+        )
+
+
+        if decoded_url != text:
+
+            variants.append(
+                decoded_url
+            )
+
+
+
+    # Base64 decode
+
+    if settings.get(
+        "decode_base64",
+        True,
+    ):
+
+
+        decoded_b64 = decode_base64(
+            text
+        )
+
+
+        if decoded_b64:
+
+            variants.append(
+                decoded_b64
+            )
+
+
+
+    for variant in variants:
+
+
+        variant = clean_text(
+            variant
+        )
+
+
+        matches = (
+            VLESS_PATTERN.findall(
+                variant
+            )
+        )
+
+
+        for item in matches:
+
+
+            item = normalize_vless(
+                item
+            )
+
+
+            if item:
+
+                results.append(
+                    item
+                )
+
+
+
+    return list(
+        dict.fromkeys(
+            results
+        )
+    )
+
+
+
+# ============================================================
+# Normalize VLESS URI
+# ============================================================
+
+
+def normalize_vless(
     uri: str,
-) -> tuple[bool, str, dict[str, Any]]:
+):
+
+
+    if not uri:
+
+        return None
+
+
+
+    uri = uri.strip()
+
+
+
+    # remove ending garbage chars
+
+    while uri and uri[-1] in (
+        ",",
+        ".",
+        ";",
+        ":",
+        ")",
+        "]",
+        "}",
+        "'",
+        '"',
+    ):
+
+        uri = uri[:-1]
+
+
+
+    if not uri.lower().startswith(
+        "vless://"
+    ):
+
+        return None
+
+
+
+    return uri
+
+
+
+# ============================================================
+# Process downloaded sources
+# ============================================================
+
+
+def extract_from_sources(
+    downloads,
+    settings,
+):
+
+
+    all_nodes = []
+
+
+    source_stats = []
+
+
+
+    for source in downloads:
+
+
+        stats = {
+
+
+            "url":
+            source["url"],
+
+
+            "status":
+            source["status"],
+
+
+            "bytes":
+            source["bytes"],
+
+
+            "download_time":
+            source["time"],
+
+
+            "found":
+            0,
+
+
+            "error":
+            source["error"],
+
+
+        }
+
+
+
+        if source["status"] != "success":
+
+            source_stats.append(
+                stats
+            )
+
+            continue
+
+
+
+        nodes = extract_vless(
+            source["content"],
+            settings,
+        )
+
+
+
+        stats["found"] = len(
+            nodes
+        )
+
+
+
+        all_nodes.extend(
+            nodes
+        )
+
+
+
+        source_stats.append(
+            stats
+        )
+
+
+
+    return (
+        all_nodes,
+        source_stats,
+    )
+
+# ============================================================
+# Part 3/4
+# Validator + Deduplicator
+# ============================================================
+
+
+# ============================================================
+# UUID validation
+# ============================================================
+
+
+UUID_PATTERN = re.compile(
+
+    r"^[0-9a-fA-F]{8}-"
+    r"[0-9a-fA-F]{4}-"
+    r"[0-9a-fA-F]{4}-"
+    r"[0-9a-fA-F]{4}-"
+    r"[0-9a-fA-F]{12}$"
+
+)
+
+
+
+def valid_uuid(
+    value: str,
+):
+
+    return bool(
+        UUID_PATTERN.fullmatch(
+            value
+        )
+    )
+
+
+
+# ============================================================
+# Host validation
+# ============================================================
+
+
+def valid_host(
+    host: str,
+):
+
+    if not host:
+
+        return False
+
+
+    host = host.strip(
+        "[]"
+    )
+
+
+    if " " in host:
+
+        return False
+
+
+    if len(host) > 253:
+
+        return False
+
+
+    return True
+
+
+
+# ============================================================
+# Port validation
+# ============================================================
+
+
+def valid_port(
+    port,
+):
 
     try:
-        parsed = urlparse(uri)
+
+        port = int(
+            port
+        )
+
+
+    except Exception:
+
+        return False
+
+
+
+    return (
+        1 <= port <= 65535
+    )
+
+
+
+# ============================================================
+# VLESS validator
+# ============================================================
+
+
+def validate_vless(
+    uri: str,
+):
+
+
+    result = {
+
+
+        "valid": False,
+
+
+        "reason": "",
+
+
+        "security": "",
+
+
+        "transport": "",
+
+
+    }
+
+
+
+    try:
+
+
+        parsed = urlparse(
+            uri
+        )
+
+
 
     except Exception as error:
-        return (
-            False,
-            f"url_parse_error: {error}",
-            {},
+
+
+        result["reason"] = (
+            f"url_error:{error}"
         )
 
+
+        return result
+
+
+
     if parsed.scheme.lower() != "vless":
-        return (
-            False,
-            "invalid_scheme",
-            {},
+
+
+        result["reason"] = (
+            "wrong_scheme"
         )
+
+
+        return result
+
+
 
     uuid = unquote(
         parsed.username or ""
-    ).strip()
+    )
 
-    if not uuid:
-        return (
-            False,
-            "missing_uuid",
-            {},
+
+
+    if not valid_uuid(
+        uuid
+    ):
+
+
+        result["reason"] = (
+            "bad_uuid"
         )
 
-    if not is_valid_uuid(uuid):
-        return (
-            False,
-            "invalid_uuid",
-            {},
-        )
+
+        return result
+
+
 
     host = parsed.hostname
 
-    if not host:
-        return (
-            False,
-            "missing_host",
-            {},
+
+
+    if not valid_host(
+        host
+    ):
+
+
+        result["reason"] = (
+            "bad_host"
         )
 
-    if not is_valid_host(host):
-        return (
-            False,
-            "invalid_host",
-            {},
-        )
+
+        return result
+
+
 
     try:
+
         port = parsed.port
 
-    except ValueError:
-        return (
-            False,
-            "invalid_port",
-            {},
+
+    except Exception:
+
+
+        result["reason"] = (
+            "bad_port"
         )
 
-    if port is None:
-        return (
-            False,
-            "missing_port",
-            {},
+
+        return result
+
+
+
+    if not valid_port(
+        port
+    ):
+
+
+        result["reason"] = (
+            "bad_port"
         )
 
-    if not is_valid_port(str(port)):
-        return (
-            False,
-            "invalid_port",
-            {},
-        )
+
+        return result
+
+
 
     query = parse_qs(
         parsed.query,
         keep_blank_values=True,
     )
+
+
 
     security = query.get(
         "security",
         ["none"],
     )[0].lower()
 
-    allowed_security = {
-        "none",
-        "tls",
-        "reality",
-    }
 
-    if security not in allowed_security:
-        return (
-            False,
-            "unsupported_security",
-            {},
-        )
 
     transport = query.get(
         "type",
         ["tcp"],
     )[0].lower()
 
-    allowed_transports = {
-        "tcp",
-        "ws",
-        "grpc",
-        "http",
-        "h2",
-        "xhttp",
-        "kcp",
-        "quic",
-    }
 
-    if transport not in allowed_transports:
-        return (
-            False,
-            "unsupported_transport",
-            {},
-        )
+
+    result["security"] = security
+
+    result["transport"] = transport
+
+
+
+    # --------------------------------------------------------
+    # Security checks
+    # --------------------------------------------------------
+
 
     if security == "reality":
 
+
         public_key = (
-            query.get("pbk", [""])[0]
-            or query.get("publicKey", [""])[0]
+
+            query.get(
+                "pbk",
+                [""],
+            )[0]
+
+            or
+
+            query.get(
+                "publicKey",
+                [""],
+            )[0]
+
         )
+
+
 
         if not public_key:
-            return (
-                False,
-                "reality_missing_public_key",
-                {},
+
+
+            result["reason"] = (
+                "reality_without_pbk"
             )
 
-        sni = (
-            query.get("sni", [""])[0]
-            or query.get("serverName", [""])[0]
-        )
 
-        if not sni:
-            return (
-                False,
-                "reality_missing_sni",
-                {},
-            )
+            return result
 
-    if security == "tls":
+
 
         sni = query.get(
             "sni",
             [""],
         )[0]
 
+
+
         if not sni:
+
+
+            result["reason"] = (
+                "reality_without_sni"
+            )
+
+
+            return result
+
+
+
+    elif security == "tls":
+
+
+        sni = query.get(
+            "sni",
+            [""],
+        )[0]
+
+
+
+        if not sni:
+
 
             server_name = query.get(
                 "serverName",
                 [""],
             )[0]
 
+
+
             if not server_name:
-                return (
-                    False,
-                    "tls_missing_sni",
-                    {},
+
+
+                result["reason"] = (
+                    "tls_without_sni"
                 )
 
-    if transport == "ws":
 
-        path = query.get(
-            "path",
-            [""],
-        )[0]
+                return result
 
-        if not path:
-            logger.debug(
-                "WebSocket URI without path: %s",
-                uri,
-            )
 
-    if transport == "grpc":
 
-        service_name = query.get(
-            "serviceName",
-            [""],
-        )[0]
+    # --------------------------------------------------------
+    # Transport checks
+    # --------------------------------------------------------
 
-        if not service_name:
-            logger.debug(
-                "gRPC URI without serviceName: %s",
-                uri,
-            )
 
-    metadata = {
-        "uuid": uuid,
-        "host": host,
-        "port": port,
-        "security": security,
-        "transport": transport,
+    allowed_transports = {
+
+
+        "tcp",
+        "ws",
+        "grpc",
+        "http",
+        "h2",
+        "xhttp",
+        "quic",
+        "kcp",
+
     }
 
-    return (
-        True,
-        "",
-        metadata,
-    )
+
+
+    if transport not in allowed_transports:
+
+
+        result["reason"] = (
+            "unknown_transport"
+        )
+
+
+        return result
+
+
+
+    result["valid"] = True
+
+
+    return result
+
 
 
 # ============================================================
-# Output
+# Fingerprint
 # ============================================================
 
 
-def write_lines(
+def node_hash(
+    uri: str,
+):
+
+
+    try:
+
+
+        parsed = urlparse(
+            uri
+        )
+
+
+        query = parse_qs(
+            parsed.query,
+            keep_blank_values=True,
+        )
+
+
+
+        data = {
+
+
+            "uuid":
+            unquote(
+                parsed.username or ""
+            ).lower(),
+
+
+            "host":
+            (
+                parsed.hostname
+                or ""
+            ).lower(),
+
+
+            "port":
+            parsed.port or 0,
+
+
+            "type":
+            query.get(
+                "type",
+                [""],
+            )[0],
+
+
+            "security":
+            query.get(
+                "security",
+                [""],
+            )[0],
+
+
+        }
+
+
+
+        raw = json.dumps(
+            data,
+            sort_keys=True,
+        )
+
+
+
+        return hashlib.sha256(
+            raw.encode()
+        ).hexdigest()
+
+
+
+    except Exception:
+
+
+        return hashlib.sha256(
+            uri.encode()
+        ).hexdigest()
+
+
+
+# ============================================================
+# Validate all nodes
+# ============================================================
+
+
+def validate_nodes(
+    nodes,
+):
+
+
+    valid = []
+
+    invalid = []
+
+    duplicates = []
+
+
+
+    seen = set()
+
+
+
+    statistics = {
+
+
+        "security": {},
+
+
+        "transport": {},
+
+
+        "errors": {},
+
+
+    }
+
+
+
+    for node in nodes:
+
+
+        check = validate_vless(
+            node
+        )
+
+
+
+        if not check["valid"]:
+
+
+            invalid.append(
+                node
+                +
+                "\t"
+                +
+                check["reason"]
+            )
+
+
+
+            statistics["errors"][
+                check["reason"]
+            ] = (
+
+                statistics["errors"]
+                .get(
+                    check["reason"],
+                    0,
+                )
+                +
+                1
+
+            )
+
+
+            continue
+
+
+
+        fingerprint = node_hash(
+            node
+        )
+
+
+
+        if fingerprint in seen:
+
+
+            duplicates.append(
+                node
+            )
+
+
+            continue
+
+
+
+        seen.add(
+            fingerprint
+        )
+
+
+
+        valid.append(
+            node
+        )
+
+
+
+        security = (
+            check["security"]
+            or
+            "none"
+        )
+
+
+        transport = (
+            check["transport"]
+            or
+            "tcp"
+        )
+
+
+
+        statistics["security"][
+            security
+        ] = (
+
+            statistics["security"]
+            .get(
+                security,
+                0,
+            )
+            +
+            1
+
+        )
+
+
+
+        statistics["transport"][
+            transport
+        ] = (
+
+            statistics["transport"]
+            .get(
+                transport,
+                0,
+            )
+            +
+            1
+
+        )
+
+
+
+    return {
+
+
+        "valid":
+        valid,
+
+
+        "invalid":
+        invalid,
+
+
+        "duplicates":
+        duplicates,
+
+
+        "statistics":
+        statistics,
+
+
+    }
+
+# ============================================================
+# Part 4/4
+# Output + Main
+# ============================================================
+
+
+
+# ============================================================
+# Write text file
+# ============================================================
+
+
+def write_file(
     path: Path,
-    lines: list[str],
-) -> None:
+    data,
+):
 
-    unique_lines = list(
-        dict.fromkeys(lines)
-    )
 
-    with path.open(
+    with open(
+        path,
         "w",
         encoding="utf-8",
         newline="\n",
     ) as file:
 
-        if unique_lines:
+
+        if data:
+
             file.write(
-                "\n".join(unique_lines)
+                "\n".join(data)
             )
 
-            file.write("\n")
+            file.write(
+                "\n"
+            )
 
 
-def write_chunks(
-    nodes: list[str],
-    chunk_size: int = 1000,
-) -> None:
 
-    for old_file in CHUNKS_DIR.glob(
-        "chunk_*.txt"
+# ============================================================
+# Create chunks
+# ============================================================
+
+
+def create_chunks(
+    nodes,
+    chunk_size,
+):
+
+
+    # clear old chunks
+
+    for old in CHUNKS_DIR.glob(
+        "*.txt"
     ):
-        old_file.unlink()
 
-    if chunk_size <= 0:
-        chunk_size = 1000
+        old.unlink()
+
+
 
     for index in range(
         0,
@@ -615,418 +1620,442 @@ def write_chunks(
         chunk_size,
     ):
 
+
         chunk = nodes[
-            index:index + chunk_size
+            index:
+            index + chunk_size
         ]
 
-        chunk_number = (
+
+
+        number = (
             index // chunk_size
         ) + 1
 
-        path = CHUNKS_DIR / (
-            f"chunk_{chunk_number:03d}.txt"
+
+
+        file = (
+            CHUNKS_DIR
+            /
+            f"chunk_{number:03}.txt"
         )
 
-        write_lines(
-            path,
+
+
+        write_file(
+            file,
             chunk,
         )
 
 
-def write_statistics(
-    stats: dict[str, Any],
-) -> None:
 
-    with STATS_FILE.open(
+# ============================================================
+# JSON writer
+# ============================================================
+
+
+def write_json(
+    path: Path,
+    data,
+):
+
+
+    with open(
+        path,
         "w",
         encoding="utf-8",
     ) as file:
 
+
         json.dump(
-            stats,
+            data,
             file,
             ensure_ascii=False,
             indent=2,
         )
 
-        file.write("\n")
+
+
+        file.write(
+            "\n"
+        )
+
 
 
 # ============================================================
-# Main Parser
+# Build global statistics
 # ============================================================
 
 
-def run() -> int:
+def build_stats(
+    downloads,
+    source_stats,
+    validation,
+):
+
+
+    return {
+
+
+        "project":
+        PROJECT_NAME,
+
+
+        "time":
+        time.strftime(
+            "%Y-%m-%d %H:%M:%S"
+        ),
+
+
+        "sources": {
+
+
+            "total":
+            len(downloads),
+
+
+            "success":
+            len(
+                [
+                    x
+                    for x in downloads
+                    if x["status"]
+                    ==
+                    "success"
+                ]
+            ),
+
+
+            "failed":
+            len(
+                [
+                    x
+                    for x in downloads
+                    if x["status"]
+                    !=
+                    "success"
+                ]
+            ),
+
+        },
+
+
+
+        "nodes": {
+
+
+            "valid":
+            len(
+                validation["valid"]
+            ),
+
+
+            "invalid":
+            len(
+                validation["invalid"]
+            ),
+
+
+            "duplicates":
+            len(
+                validation["duplicates"]
+            ),
+
+
+        },
+
+
+
+        "protocols":
+        validation["statistics"],
+
+
+
+    }
+
+
+
+# ============================================================
+# MAIN
+# ============================================================
+
+
+def main():
+
+
 
     logger.info(
         "Starting %s",
         PROJECT_NAME,
     )
 
-    ensure_directories()
 
-    try:
-        config = load_yaml(
-            SOURCES_FILE
-        )
 
-    except Exception as error:
+    prepare_directories()
 
-        logger.error(
-            "Failed to load sources.yml: %s",
-            error,
-        )
 
-        return 1
+
+    # --------------------------------------------------------
+    # Load config
+    # --------------------------------------------------------
+
+
+    config = load_config()
+
+
+
+    settings = get_settings(
+        config
+    )
+
+
 
     sources = get_sources(
         config
     )
 
-    enabled_sources = [
-        source
-        for source in sources
-        if source.get(
-            "enabled",
-            True,
-        )
-    ]
 
-    if not enabled_sources:
+
+    if not sources:
+
 
         logger.error(
-            "No enabled sources found"
+            "No sources found"
         )
+
 
         return 1
 
+
+
     logger.info(
-        "Configured sources: %d",
-        len(enabled_sources),
+        "Sources loaded: %s",
+        len(sources),
     )
 
-    session = requests.Session()
 
-    session.headers.update(
-        {
-            "User-Agent": USER_AGENT,
-            "Accept": "*/*",
-        }
+
+    # --------------------------------------------------------
+    # Download
+    # --------------------------------------------------------
+
+
+    downloads = download_all_sources(
+        sources,
+        settings,
     )
 
-    valid_nodes: list[str] = []
-    invalid_nodes: list[str] = []
-    duplicate_nodes: list[str] = []
 
-    seen_fingerprints: set[str] = set()
 
-    source_statistics: dict[str, dict[str, Any]] = {}
+    # --------------------------------------------------------
+    # Extract
+    # --------------------------------------------------------
 
-    validation_errors = Counter()
-    security_counter = Counter()
-    transport_counter = Counter()
 
-    total_downloaded = 0
-    successful_sources = 0
-    failed_sources = 0
-
-    for source in enabled_sources:
-
-        source_name = str(
-            source.get(
-                "name",
-                "unknown",
-            )
+    nodes, source_stats = (
+        extract_from_sources(
+            downloads,
+            settings,
         )
+    )
 
-        logger.info(
-            "Fetching source: %s",
-            source_name,
-        )
 
-        source_statistics[
-            source_name
-        ] = {
-            "url": source.get(
-                "url",
-                "",
-            ),
-            "status": "pending",
-            "extracted": 0,
-            "valid": 0,
-            "invalid": 0,
-            "duplicates": 0,
-        }
 
-        try:
+    logger.info(
+        "Extracted nodes: %s",
+        len(nodes),
+    )
 
-            _, text = fetch_source(
-                session,
-                source,
-            )
 
-            successful_sources += 1
 
-            extracted = extract_from_text(
-                text
-            )
+    # --------------------------------------------------------
+    # Validate
+    # --------------------------------------------------------
 
-            total_downloaded += len(
-                text.encode(
-                    "utf-8",
-                    errors="ignore",
-                )
-            )
 
-            source_statistics[
-                source_name
-            ][
-                "status"
-            ] = "success"
+    validation = validate_nodes(
+        nodes
+    )
 
-            source_statistics[
-                source_name
-            ][
-                "extracted"
-            ] = len(extracted)
 
-            logger.info(
-                "%s: extracted %d VLESS URIs",
-                source_name,
-                len(extracted),
-            )
 
-        except Exception as error:
+    valid_nodes = (
+        validation["valid"]
+    )
 
-            failed_sources += 1
 
-            source_statistics[
-                source_name
-            ][
-                "status"
-            ] = "error"
+    invalid_nodes = (
+        validation["invalid"]
+    )
 
-            source_statistics[
-                source_name
-            ][
-                "error"
-            ] = str(error)
 
-            logger.warning(
-                "%s: %s",
-                source_name,
-                error,
-            )
+    duplicate_nodes = (
+        validation["duplicates"]
+    )
 
-            continue
 
-        for raw_uri in extracted:
-
-            uri = normalize_uri(
-                raw_uri
-            )
-
-            is_valid, reason, metadata = (
-                validate_vless_uri(uri)
-            )
-
-            if not is_valid:
-
-                invalid_nodes.append(
-                    f"{reason}\t{uri}"
-                )
-
-                validation_errors[
-                    reason
-                ] += 1
-
-                source_statistics[
-                    source_name
-                ][
-                    "invalid"
-                ] += 1
-
-                continue
-
-            fingerprint = fingerprint_uri(
-                uri
-            )
-
-            if fingerprint in seen_fingerprints:
-
-                duplicate_nodes.append(
-                    uri
-                )
-
-                source_statistics[
-                    source_name
-                ][
-                    "duplicates"
-                ] += 1
-
-                continue
-
-            seen_fingerprints.add(
-                fingerprint
-            )
-
-            valid_nodes.append(
-                uri
-            )
-
-            source_statistics[
-                source_name
-            ][
-                "valid"
-            ] += 1
-
-            security_counter[
-                metadata[
-                    "security"
-                ]
-            ] += 1
-
-            transport_counter[
-                metadata[
-                    "transport"
-                ]
-            ] += 1
 
     valid_nodes.sort()
 
-    invalid_nodes.sort()
 
-    duplicate_nodes.sort()
 
-    chunk_size = config.get(
-        "chunk_size",
-        1000,
-    )
+    # --------------------------------------------------------
+    # Output
+    # --------------------------------------------------------
 
-    try:
-        chunk_size = int(
-            chunk_size
-        )
 
-    except (
-        TypeError,
-        ValueError,
-    ):
-        chunk_size = 1000
-
-    write_lines(
+    write_file(
         VALID_FILE,
         valid_nodes,
     )
 
-    write_lines(
+
+    write_file(
         INVALID_FILE,
         invalid_nodes,
     )
 
-    write_lines(
+
+    write_file(
         DUPLICATES_FILE,
         duplicate_nodes,
     )
 
-    write_chunks(
+
+
+    chunk_size = int(
+        settings.get(
+            "chunk_size",
+            1000,
+        )
+    )
+
+
+
+    create_chunks(
         valid_nodes,
         chunk_size,
     )
 
-    stats = {
-        "project": PROJECT_NAME,
-        "sources": {
-            "configured": len(
-                enabled_sources
-            ),
-            "successful": successful_sources,
-            "failed": failed_sources,
-        },
-        "nodes": {
-            "valid": len(
-                valid_nodes
-            ),
-            "invalid": len(
-                invalid_nodes
-            ),
-            "duplicates": len(
-                duplicate_nodes
-            ),
-        },
-        "download": {
-            "bytes": total_downloaded,
-        },
-        "security": dict(
-            security_counter
-        ),
-        "transports": dict(
-            transport_counter
-        ),
-        "validation_errors": dict(
-            validation_errors
-        ),
-        "sources": source_statistics,
-    }
 
-    write_statistics(
-        stats
+
+    # --------------------------------------------------------
+    # Statistics
+    # --------------------------------------------------------
+
+
+    for stat in source_stats:
+
+
+        url = stat["url"]
+
+
+
+        found = 0
+
+
+
+        for node in valid_nodes:
+
+
+            if url in node:
+
+                found += 1
+
+
+
+        stat["valid_after_filter"] = found
+
+
+
+    global_stats = build_stats(
+        downloads,
+        source_stats,
+        validation,
     )
 
-    logger.info(
-        "Finished %s",
-        PROJECT_NAME,
+
+
+    write_json(
+        STATS_FILE,
+        global_stats,
     )
 
+
+    write_json(
+        SOURCES_STATS_FILE,
+        source_stats,
+    )
+
+
+
     logger.info(
-        "Valid: %d",
+        "=========================="
+    )
+
+
+    logger.info(
+        "Valid nodes: %s",
         len(valid_nodes),
     )
 
+
     logger.info(
-        "Invalid: %d",
+        "Invalid nodes: %s",
         len(invalid_nodes),
     )
 
+
     logger.info(
-        "Duplicates: %d",
+        "Duplicates: %s",
         len(duplicate_nodes),
     )
 
+
     logger.info(
-        "Output: %s",
-        OUTPUT_DIR,
+        "Finished successfully"
     )
+
+
 
     return 0
 
 
+
 # ============================================================
-# Entry Point
+# Entry point
 # ============================================================
 
 
 if __name__ == "__main__":
 
+
     try:
-        sys.exit(
-            run()
+
+
+        exit(
+            main()
         )
+
 
     except KeyboardInterrupt:
 
+
         logger.warning(
-            "Interrupted by user"
+            "Interrupted"
         )
 
-        sys.exit(130)
+
+        exit(130)
+
+
 
     except Exception as error:
 
+
         logger.exception(
-            "Fatal error: %s",
-            error,
+            error
         )
 
-        sys.exit(1)
+
+        exit(1)
