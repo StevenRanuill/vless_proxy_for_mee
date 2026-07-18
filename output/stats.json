@@ -1,21 +1,21 @@
 {
   "project": "Skibidi_tualet_proxy",
-  "updated_at": "2026-07-18 15:32:53 UTC",
+  "updated_at": "2026-07-18 20:32:58 UTC",
   "sources": {
     "total": 42,
     "success": 41,
     "failed": 1
   },
   "nodes": {
-    "valid": 105554,
-    "invalid": 47218,
-    "duplicates": 224945
+    "valid": 106098,
+    "invalid": 46905,
+    "duplicates": 226002
   },
   "protocols": {
     "security": {
-      "none": 44917,
-      "reality": 26121,
-      "tls": 33852,
+      "reality": 26327,
+      "none": 45125,
+      "tls": 33981,
       "false": 105,
       "none=/@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran": 111,
       "xtls": 36,
@@ -39,26 +39,27 @@
       "lti4um2ktdx2ycczh2kdi1_jz-mg": 1,
       "non=e": 1,
       "t": 1,
+      "tls=-@ghalagyann---@ghalagyann---@ghalagyann---@ghalagyann---@ghalagyann---@ghalagyann": 1,
       "reality=/": 1
     },
     "transport": {
-      "tcp": 40315,
-      "ws": 45138,
-      "xhttp": 5530,
-      "grpc": 14321,
-      "http": 194,
+      "grpc": 14338,
+      "tcp": 40643,
+      "ws": 45339,
+      "xhttp": 5532,
+      "http": 190,
       "kcp": 49,
       "h2": 3,
       "quic": 4
     },
     "errors": {
-      "tls_without_sni": 6723,
-      "reality_without_pbk": 4152,
-      "unknown_transport": 16070,
-      "bad_uuid": 19444,
+      "unknown_transport": 15808,
+      "reality_without_pbk": 4166,
+      "tls_without_sni": 6661,
+      "bad_uuid": 19438,
       "bad_host": 21,
+      "bad_port": 25,
       "url_error:'6fa0ed5f-4c53-4fa9-af42-46fb2ca1278a' does not appear to be an IPv4 or IPv6 address": 3,
-      "bad_port": 22,
       "url_error:Invalid IPv6 URL": 14,
       "url_error:'emailprotected' does not appear to be an IPv4 or IPv6 address": 769
     }
