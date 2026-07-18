@@ -1,24 +1,23 @@
 {
   "project": "Skibidi_tualet_proxy",
-  "updated_at": "2026-07-17 20:39:45 UTC",
+  "updated_at": "2026-07-18 07:11:39 UTC",
   "sources": {
     "total": 42,
     "success": 41,
     "failed": 1
   },
   "nodes": {
-    "valid": 104535,
-    "invalid": 45264,
-    "duplicates": 208677
+    "valid": 105118,
+    "invalid": 48750,
+    "duplicates": 230990
   },
   "protocols": {
     "security": {
-      "tls": 33464,
-      "none": 44846,
-      "reality": 25561,
-      "none=/@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran": 110,
+      "tls": 33642,
+      "reality": 25864,
+      "none": 44947,
       "false": 105,
-      "none=/@vpnine1,--@vpnine1,--@vpnine1,--@vpnine1,--@vpnine1,--@vpnine1,--@vpnine1": 1,
+      "none=/@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran": 111,
       "xtls": 36,
       "reality=/@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn": 1,
       "reality=/@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran,--@mehrosaboran": 6,
@@ -33,6 +32,7 @@
       "auto": 353,
       "none=/@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn": 4,
       "nonee=@freeonlinevpn": 1,
+      "none=/@vpnine1,--@vpnine1,--@vpnine1,--@vpnine1,--@vpnine1,--@vpnine1,--@vpnine1": 1,
       "none=/@telegram-|-@tehranargo-joinbede-|-@telegram-|-@tehranargo-|-joinbede-|-@telegram-|-@tehranargo": 3,
       "reality=/#@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn,@bored_vpn,--@bored_vpn": 1,
       "tlshttps://t.me/vtworay_wolf/1191": 1,
@@ -43,25 +43,25 @@
       "reality=/": 1
     },
     "transport": {
-      "ws": 44722,
-      "tcp": 39912,
-      "xhttp": 5462,
-      "grpc": 14197,
-      "http": 186,
+      "ws": 44937,
+      "tcp": 40155,
+      "grpc": 14283,
+      "xhttp": 5499,
+      "http": 188,
       "kcp": 49,
       "h2": 3,
       "quic": 4
     },
     "errors": {
-      "tls_without_sni": 6187,
-      "bad_uuid": 19508,
-      "unknown_transport": 15204,
-      "reality_without_pbk": 3577,
-      "url_error:Invalid IPv6 URL": 17,
-      "bad_host": 21,
+      "unknown_transport": 16765,
+      "reality_without_pbk": 4109,
+      "bad_uuid": 20335,
+      "tls_without_sni": 6711,
+      "bad_host": 22,
       "bad_port": 22,
       "url_error:'6fa0ed5f-4c53-4fa9-af42-46fb2ca1278a' does not appear to be an IPv4 or IPv6 address": 3,
-      "url_error:'emailprotected' does not appear to be an IPv4 or IPv6 address": 725
+      "url_error:Invalid IPv6 URL": 14,
+      "url_error:'emailprotected' does not appear to be an IPv4 or IPv6 address": 769
     }
   }
 }
