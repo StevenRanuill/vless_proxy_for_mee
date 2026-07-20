@@ -1,256 +1,1025 @@
-from __future__ import annotations
+# ==========================================================
+# Skibidi_tualet_proxy
+# VLESS Checker
+# Part 1
+# ==========================================================
 
+
+import os
+import sys
 import json
-import logging
+import time
+import uuid
+import random
+import shutil
+import signal
 import socket
+import logging
 import subprocess
 import tempfile
-import time
-import shutil
-import uuid
-
 from pathlib import Path
+from datetime import datetime
+
+
+import requests
+
+
 from urllib.parse import (
     urlparse,
     parse_qs,
     unquote,
+    quote,
 )
 
-import requests
+
 
 # ==========================================================
-# PROJECT
+# BASE PATHS
 # ==========================================================
 
-PROJECT_NAME = "Skibidi_tualet_proxy"
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(
+    __file__
+).resolve().parent
 
-OUTPUT_DIR = BASE_DIR / "output"
 
-CHUNKS_DIR = OUTPUT_DIR / "chunks"
 
-TEMP_DIR = OUTPUT_DIR / "checker_temp"
+XRAY_PATH = (
+    BASE_DIR
+    /
+    "Xray"
+    /
+    "xray.exe"
+)
 
-XRAY_DIR = BASE_DIR / "Xray"
 
-XRAY_PATH = XRAY_DIR / "xray.exe"
 
-CHECKED_FILE = OUTPUT_DIR / "checked_vless.txt"
+OUTPUT_DIR = (
+    BASE_DIR
+    /
+    "output"
+)
 
-DEAD_FILE = OUTPUT_DIR / "dead_vless.txt"
 
-STATS_FILE = OUTPUT_DIR / "checker_stats.json"
+
+CHUNKS_DIR = (
+    OUTPUT_DIR
+    /
+    "chunks"
+)
+
+
+
+TEMP_DIR = (
+    OUTPUT_DIR
+    /
+    "checker_temp"
+)
+
+
+
+MY_SUB_FILE = (
+    BASE_DIR
+    /
+    "my_sub.txt"
+)
+
+
+
+CHECKED_FILE = (
+    OUTPUT_DIR
+    /
+    "checked_vless.txt"
+)
+
+
+
+STATS_FILE = (
+    OUTPUT_DIR
+    /
+    "checker_stats.json"
+)
+
+
 
 # ==========================================================
-# SETTINGS
+# XRAY SETTINGS
 # ==========================================================
 
-TEST_URL = "https://www.google.com/generate_204"
 
-REQUEST_TIMEOUT = 10
+XRAY_HOST = "127.0.0.1"
 
-XRAY_START_TIMEOUT = 8
 
-CHUNK_DELAY = 1
+SOCKS_START_PORT = 10808
 
-REMOVE_TEMP_FILES = True
 
-LOCAL_HOST = "127.0.0.1"
+
+REQUEST_TIMEOUT = 15
+
+
+
+XRAY_START_TIMEOUT = 10
+
+
 
 # ==========================================================
-# LOGGING
+# TEST TARGETS
 # ==========================================================
+
+
+TEST_TARGETS = {
+
+
+    "telegram":
+    "https://api.telegram.org",
+
+
+    "youtube":
+    "https://www.youtube.com/generate_204",
+
+
+    "instagram":
+    "https://www.instagram.com",
+
+
+    "discord":
+    "https://discord.com/api/v10/gateway",
+
+}
+
+
+
+# ==========================================================
+# LOGGER
+# ==========================================================
+
+
+LOG_FILE = (
+    BASE_DIR
+    /
+    "checker.log"
+)
+
+
 
 logging.basicConfig(
+
     level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s",
+
+    format=
+
+    "%(asctime)s | "
+
+    "%(levelname)s | "
+
+    "%(message)s",
+
+    handlers=[
+
+        logging.FileHandler(
+
+            LOG_FILE,
+
+            encoding="utf-8"
+
+        ),
+
+
+        logging.StreamHandler()
+
+    ]
+
 )
 
-logger = logging.getLogger(PROJECT_NAME)
+
+
+logger = logging.getLogger(
+
+    "Skibidi_tualet_proxy"
+
+)
+
+
 
 # ==========================================================
-# NETWORK
+# CREATE DIRECTORIES
 # ==========================================================
 
-def get_free_port() -> int:
 
-    with socket.socket() as sock:
+for folder in [
 
-        sock.bind(
-            (
-                LOCAL_HOST,
-                0,
-            )
-        )
+    OUTPUT_DIR,
 
-        return sock.getsockname()[1]
+    TEMP_DIR,
 
-# ==========================================================
-# FILESYSTEM
-# ==========================================================
+    CHUNKS_DIR,
 
-def prepare_directories():
+]:
 
-    OUTPUT_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
+    folder.mkdir(
+
+        exist_ok=True
+
     )
 
-    TEMP_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
+
+
+# ==========================================================
+# STARTUP CHECK
+# ==========================================================
+
 
 def check_environment():
 
-    logger.info(
-        "Project directory: %s",
-        BASE_DIR,
-    )
-
-    logger.info(
-        "Xray: %s",
-        XRAY_PATH,
-    )
 
     if not XRAY_PATH.exists():
 
-        raise FileNotFoundError(
+        logger.error(
+
+            "Xray not found: %s",
+
             XRAY_PATH
+
         )
 
-    if not CHUNKS_DIR.exists():
+        sys.exit(1)
 
-        raise FileNotFoundError(
-            CHUNKS_DIR
-        )
 
-# ==========================================================
-# CHUNKS
-# ==========================================================
-
-def get_chunks():
-
-    chunks = sorted(
-        CHUNKS_DIR.glob(
-            "chunk_*.txt"
-        )
-    )
-
-    if not chunks:
-
-        raise RuntimeError(
-            "Chunks not found."
-        )
 
     logger.info(
-        "Chunks: %d",
-        len(chunks),
+
+        "Project: Skibidi_tualet_proxy"
+
     )
 
-    return chunks
 
-def load_nodes(chunk: Path):
+    logger.info(
 
-    with chunk.open(
-        "r",
-        encoding="utf-8",
-    ) as file:
+        "Xray: %s",
 
-        nodes = [
+        XRAY_PATH
 
-            line.strip()
+    )
 
-            for line in file
+# ==========================================================
+# PROXY NAME GENERATOR
+# Skibidi_tualet_proxy
+# ==========================================================
 
-            if line.startswith(
-                "vless://"
-            )
 
-        ]
+COUNTRY_FLAGS = {
 
-    return list(
-        dict.fromkeys(
-            nodes
+    "US": "🇺🇸",
+    "DE": "🇩🇪",
+    "NL": "🇳🇱",
+    "FI": "🇫🇮",
+    "FR": "🇫🇷",
+    "GB": "🇬🇧",
+    "JP": "🇯🇵",
+    "SG": "🇸🇬",
+    "CA": "🇨🇦",
+    "RU": "🇷🇺",
+    "SE": "🇸🇪",
+    "CH": "🇨🇭",
+    "AU": "🇦🇺",
+    "BR": "🇧🇷",
+    "PL": "🇵🇱",
+    "CZ": "🇨🇿",
+    "TR": "🇹🇷",
+
+}
+
+
+
+SKIBIDI_HEROES = {
+
+
+    "toilet": [
+
+        "Astro Toilet",
+
+        "G-Man Toilet",
+
+        "Scientist Toilet",
+
+        "Laser Toilet",
+
+        "Shadow Toilet",
+
+    ],
+
+
+
+    "tv": [
+
+        "Titan TV Man",
+
+        "TV Man Ultra",
+
+        "Mega TV Man",
+
+        "Shadow TV Man",
+
+    ],
+
+
+
+    "camera": [
+
+        "Titan Cameraman",
+
+        "Cameraman Prime",
+
+        "Dark Cameraman",
+
+        "Shadow Cameraman",
+
+    ],
+
+
+
+    "speaker": [
+
+        "Titan Speakerman",
+
+        "Speakerman Prime",
+
+        "Shadow Speakerman",
+
+    ],
+
+}
+
+
+
+HERO_EMOJI = {
+
+
+    "toilet":
+    "🚽",
+
+
+    "tv":
+    "📺",
+
+
+    "camera":
+    "🎥",
+
+
+    "speaker":
+    "🔊",
+
+}
+
+
+
+
+def detect_country(address):
+
+    """
+    Временная версия.
+    Позже заменим на geoip.dat.
+    """
+
+
+    return random.choice(
+
+        list(
+            COUNTRY_FLAGS.keys()
         )
+
+    )
+
+
+
+
+
+def generate_proxy_name(
+
+        address,
+
+        country=None
+
+):
+
+
+    """
+    Создание стабильного имени.
+
+    Один IP = одно имя
+    """
+
+
+
+    old_state = random.getstate()
+
+
+
+    random.seed(
+
+        address
+
+    )
+
+
+
+    if not country:
+
+
+        country = detect_country(
+
+            address
+
+        )
+
+
+
+    flag = COUNTRY_FLAGS.get(
+
+        country,
+
+        "🌐"
+
+    )
+
+
+
+    hero_type = random.choice(
+
+        list(
+            SKIBIDI_HEROES.keys()
+        )
+
+    )
+
+
+
+    hero = random.choice(
+
+        SKIBIDI_HEROES[hero_type]
+
+    )
+
+
+
+    emoji = HERO_EMOJI[hero_type]
+
+
+
+    random.setstate(
+
+        old_state
+
+    )
+
+
+
+    return (
+
+        f"{flag} "
+
+        f"{hero} "
+
+        f"{emoji}"
+
     )
 
 # ==========================================================
-# GIT
+# GIT SYNC
+# Skibidi_tualet_proxy
 # ==========================================================
 
-def git_pull():
 
-    logger.info(
-        "Updating repository..."
-    )
-
-    subprocess.run(
-        [
-            "git",
-            "pull",
-            "--rebase",
-        ],
-        cwd=BASE_DIR,
-        check=True,
-    )
-
-    logger.info(
-        "Repository updated."
-    )
-
-# ==========================================================
-# VLESS PARSER
-# ==========================================================
-
-def parse_vless(uri):
+def run_git_command(args):
 
     try:
 
-        parsed = urlparse(uri)
+        result = subprocess.run(
 
-        query = parse_qs(
-            parsed.query
+            [
+
+                "git",
+
+            ]
+            +
+            args,
+
+
+            cwd=BASE_DIR,
+
+
+            capture_output=True,
+
+
+            text=True,
+
+            encoding="utf-8",
+
+            errors="ignore"
+
         )
+
+
+        if result.returncode != 0:
+
+
+            logger.warning(
+
+                "Git command failed: %s",
+
+                result.stderr.strip()
+
+            )
+
+
+            return False
+
+
+
+        return True
+
+
+
+    except Exception as e:
+
+
+        logger.warning(
+
+            "Git error: %s",
+
+            e
+
+        )
+
+
+        return False
+
+
+
+
+
+def git_pull():
+
+
+    logger.info(
+
+        "Git pull..."
+
+    )
+
+
+
+    # проверяем есть ли локальные изменения
+
+    status = subprocess.run(
+
+        [
+
+            "git",
+
+            "status",
+
+            "--porcelain"
+
+        ],
+
+
+        cwd=BASE_DIR,
+
+
+        capture_output=True,
+
+
+        text=True
+
+    )
+
+
+
+    if status.stdout.strip():
+
+
+        logger.info(
+
+            "Local changes detected, skip pull"
+
+        )
+
+
+        return False
+
+
+
+    return run_git_command(
+
+        [
+
+            "pull",
+
+            "--rebase"
+
+        ]
+
+    )
+
+
+
+
+
+def git_commit_push(message):
+
+
+    logger.info(
+
+        "Git commit..."
+
+    )
+
+
+
+    run_git_command(
+
+        [
+
+            "add",
+
+            "my_sub.txt",
+
+            "output"
+
+        ]
+
+    )
+
+
+
+    commit_ok = run_git_command(
+
+        [
+
+            "commit",
+
+            "-m",
+
+            message
+
+        ]
+
+    )
+
+
+
+    if not commit_ok:
+
+
+        logger.info(
+
+            "Nothing to commit"
+
+        )
+
+
+
+    logger.info(
+
+        "Git push..."
+
+    )
+
+
+
+    return run_git_command(
+
+        [
+
+            "push"
+
+        ]
+
+    )
+
+# ==========================================================
+# CHUNK LOADER
+# Skibidi_tualet_proxy
+# ==========================================================
+
+
+def get_chunks():
+
+
+    if not CHUNKS_DIR.exists():
+
+
+        logger.error(
+
+            "Chunks directory not found: %s",
+
+            CHUNKS_DIR
+
+        )
+
+
+        return []
+
+
+
+    chunks = sorted(
+
+        CHUNKS_DIR.glob(
+
+            "chunk_*.txt"
+
+        )
+
+    )
+
+
+    logger.info(
+
+        "Found chunks: %s",
+
+        len(chunks)
+
+    )
+
+
+    return chunks
+
+
+
+
+
+def load_chunk(
+
+        chunk_file
+
+):
+
+
+    nodes = []
+
+    seen = set()
+
+
+
+    try:
+
+
+        with open(
+
+            chunk_file,
+
+            "r",
+
+            encoding="utf-8",
+
+            errors="ignore"
+
+        ) as f:
+
+
+
+            for line in f:
+
+
+                line = line.strip()
+
+
+
+                if not line:
+
+
+                    continue
+
+
+
+                # поддерживаем только VLESS
+
+                if not line.startswith(
+
+                    "vless://"
+
+                ):
+
+
+                    continue
+
+
+
+                # удаляем дубли
+
+                clean = line.split(
+
+                    "#"
+
+                )[0]
+
+
+
+                if clean in seen:
+
+
+                    continue
+
+
+
+                seen.add(
+
+                    clean
+
+                )
+
+
+
+                nodes.append(
+
+                    line
+
+                )
+
+
+
+    except Exception as e:
+
+
+        logger.error(
+
+            "Chunk load error %s: %s",
+
+            chunk_file,
+
+            e
+
+        )
+
+
+
+        return []
+
+
+
+    logger.info(
+
+        "%s loaded: %s nodes",
+
+        chunk_file.name,
+
+        len(nodes)
+
+    )
+
+
+
+    return nodes
+
+
+
+
+
+def load_all_nodes():
+
+
+    all_nodes = []
+
+    seen = set()
+
+
+
+    chunks = get_chunks()
+
+
+
+    for chunk in chunks:
+
+
+        nodes = load_chunk(
+
+            chunk
+
+        )
+
+
+
+        for node in nodes:
+
+
+            key = node.split(
+
+                "#"
+
+            )[0]
+
+
+
+            if key not in seen:
+
+
+                seen.add(
+
+                    key
+
+                )
+
+
+                all_nodes.append(
+
+                    node
+
+                )
+
+
+
+    logger.info(
+
+        "Total unique VLESS nodes: %s",
+
+        len(all_nodes)
+
+    )
+
+
+    return all_nodes
+
+# ==========================================================
+# VLESS PARSER
+# Skibidi_tualet_proxy
+# ==========================================================
+
+
+
+def parse_vless(uri):
+
+
+    try:
+
+
+        parsed = urlparse(
+
+            uri
+
+        )
+
 
 
         if parsed.scheme.lower() != "vless":
 
+
             return None
 
 
 
-        # ------------------------------
-        # UUID decode
-        # ------------------------------
+        query = parse_qs(
+
+            parsed.query
+
+        )
+
+
+
+        # ==================================================
+        # UUID
+        # ==================================================
+
 
         raw_uuid = parsed.username
 
 
+
         if not raw_uuid:
 
+
             logger.warning(
+
                 "VLESS UUID empty"
+
             )
 
+
             return None
+
 
 
 
         uuid_value = raw_uuid
 
 
-        for _ in range(3):
+
+        for _ in range(5):
+
 
             decoded = unquote(
+
                 uuid_value
+
             )
 
 
             if decoded == uuid_value:
 
+
                 break
+
 
 
             uuid_value = decoded
@@ -263,161 +1032,295 @@ def parse_vless(uri):
 
         try:
 
+
             uuid.UUID(
+
                 uuid_value
+
             )
 
 
         except ValueError:
 
 
+
             logger.warning(
 
                 "Invalid UUID skipped: %s",
 
-                uuid_value,
+                uuid_value
 
             )
+
 
             return None
 
 
 
-        # ------------------------------
-        # Address
-        # ------------------------------
+
+        # ==================================================
+        # ADDRESS
+        # ==================================================
+
 
         address = parsed.hostname
 
 
+
         if not address:
 
-            logger.warning(
-                "VLESS address empty"
-            )
 
             return None
 
 
 
-        # ------------------------------
-        # Params helper
-        # ------------------------------
+        port = parsed.port or 443
+
+
+
+
+        # ==================================================
+        # PARAM HELPER
+        # ==================================================
+
 
         def get_param(
-            name,
-            default=""
+
+                name,
+
+                default=""
+
         ):
 
+
             value = query.get(
+
                 name,
-                [default]
+
+                [
+
+                    default
+
+                ]
+
             )[0]
 
+
             return unquote(
+
                 value
+
             )
 
 
 
-        # ------------------------------
-        # Result
-        # ------------------------------
+
+
+        # ==================================================
+        # NAME
+        # ==================================================
+
+
+        name = generate_proxy_name(
+
+            address
+
+        )
+
+
+
+
+
+        # ==================================================
+        # RESULT
+        # ==================================================
+
 
         return {
 
 
+            "uri":
+
+            uri,
+
+
+
+            "name":
+
+            name,
+
+
+
             "uuid":
+
             uuid_value,
 
 
+
             "address":
+
             address,
 
 
+
             "port":
-            parsed.port or 443,
+
+            port,
+
 
 
             "security":
+
             get_param(
+
                 "security",
-                "none",
+
+                "none"
+
             ),
+
 
 
             "network":
+
             get_param(
+
                 "type",
-                "tcp",
+
+                "tcp"
+
             ),
+
 
 
             "flow":
+
             get_param(
+
                 "flow",
-                "",
+
+                ""
+
             ),
+
 
 
             "sni":
+
             get_param(
+
                 "sni",
+
                 get_param(
+
                     "serverName",
-                    "",
-                ),
+
+                    ""
+
+                )
+
             ),
+
 
 
             "fingerprint":
+
             get_param(
+
                 "fp",
-                "chrome",
+
+                "chrome"
+
             ),
+
 
 
             "public_key":
+
             get_param(
+
                 "pbk",
+
                 get_param(
+
                     "publicKey",
-                    "",
-                ),
+
+                    ""
+
+                )
+
             ),
+
 
 
             "short_id":
+
             get_param(
+
                 "sid",
+
                 get_param(
+
                     "shortId",
-                    "",
-                ),
+
+                    ""
+
+                )
+
             ),
+
 
 
             "path":
+
             get_param(
+
                 "path",
-                "/",
+
+                "/"
+
             ),
+
 
 
             "host":
+
             get_param(
+
                 "host",
-                "",
+
+                ""
+
             ),
+
 
 
             "service_name":
+
             get_param(
+
                 "serviceName",
-                "",
+
+                ""
+
             ),
 
+
+
+            "encryption":
+
+            get_param(
+
+                "encryption",
+
+                "none"
+
+            ),
+
+
+
         }
+
 
 
 
@@ -428,109 +1331,214 @@ def parse_vless(uri):
 
             "VLESS parse error: %s",
 
-            e,
+            e
 
         )
 
 
         return None
+
 # ==========================================================
-# STREAM SETTINGS
+# XRAY CONFIG BUILDER
+# Skibidi_tualet_proxy
 # ==========================================================
 
-def build_stream_settings(node):
+
+def build_xray_config(
+
+        node,
+
+        socks_port
+
+):
 
 
-    stream = {
+    security = node.get(
+
+        "security",
+
+        "none"
+
+    )
+
+
+    network = node.get(
+
+        "network",
+
+        "tcp"
+
+    )
+
+
+
+    stream_settings = {
+
+
 
         "network":
-        node["network"],
+
+        network,
+
 
 
         "security":
-        node["security"],
+
+        security,
+
+
 
     }
 
 
-    # --------------------------
+
+    # ======================================================
     # TLS
-    # --------------------------
-
-    if node["security"] == "tls":
+    # ======================================================
 
 
-        stream[
+    if security == "tls":
+
+
+        stream_settings[
+
             "tlsSettings"
+
         ] = {
 
 
             "serverName":
-            node["sni"],
 
+            node.get(
 
-            "allowInsecure":
-            True,
+                "sni",
 
+                ""
 
-        }
-
-
-    # --------------------------
-    # REALITY
-    # --------------------------
-
-    elif node["security"] == "reality":
-
-
-        stream[
-            "realitySettings"
-        ] = {
-
-
-            "serverName":
-            node["sni"],
+            ),
 
 
             "fingerprint":
-            node["fingerprint"],
+
+            node.get(
+
+                "fingerprint",
+
+                "chrome"
+
+            ),
+
+        }
+
+
+
+    # ======================================================
+    # REALITY
+    # ======================================================
+
+
+    if security == "reality":
+
+
+        stream_settings[
+
+            "realitySettings"
+
+        ] = {
+
+
+            "serverName":
+
+            node.get(
+
+                "sni",
+
+                ""
+
+            ),
+
+
+
+            "fingerprint":
+
+            node.get(
+
+                "fingerprint",
+
+                "chrome"
+
+            ),
+
 
 
             "publicKey":
-            node["public_key"],
+
+            node.get(
+
+                "public_key",
+
+                ""
+
+            ),
+
 
 
             "shortId":
-            node["short_id"],
+
+            node.get(
+
+                "short_id",
+
+                ""
+
+            ),
 
 
         }
 
 
 
-    # --------------------------
+    # ======================================================
     # WS
-    # --------------------------
-
-    if node["network"] == "ws":
+    # ======================================================
 
 
-        stream[
+    if network == "ws":
+
+
+        stream_settings[
+
             "wsSettings"
+
         ] = {
 
 
             "path":
-            node["path"],
+
+            node.get(
+
+                "path",
+
+                "/"
+
+            ),
+
 
 
             "headers":
+
             {
 
+
                 "Host":
-                node["host"]
-                or
-                node["sni"]
+
+                node.get(
+
+                    "host",
+
+                    ""
+
+                )
 
             }
 
@@ -538,619 +1546,938 @@ def build_stream_settings(node):
 
 
 
-    # --------------------------
+    # ======================================================
     # GRPC
-    # --------------------------
-
-    if node["network"] == "grpc":
+    # ======================================================
 
 
-        stream[
+    if network == "grpc":
+
+
+        stream_settings[
+
             "grpcSettings"
+
         ] = {
 
 
             "serviceName":
-            node["service_name"],
 
+            node.get(
+
+                "service_name",
+
+                ""
+
+            )
 
         }
 
-
-    return stream
-
-# ==========================================================
-# XRAY CONFIG BUILDER
-# ==========================================================
-
-def build_xray_config(
-    node,
-    socks_port,
-):
 
 
     config = {
 
 
         "log":
+
         {
 
+
             "loglevel":
+
             "warning"
 
         },
 
 
+
         "inbounds":
+
         [
+
+
 
             {
 
+
                 "listen":
-                LOCAL_HOST,
+
+                "127.0.0.1",
+
 
 
                 "port":
+
                 socks_port,
 
 
+
                 "protocol":
+
                 "socks",
 
 
+
                 "settings":
+
                 {
 
+
                     "udp":
-                    True,
 
-
-                    "auth":
-                    "noauth",
+                    True
 
                 }
 
             }
+
+
 
         ],
 
 
 
         "outbounds":
+
         [
+
+
 
             {
 
+
+
                 "protocol":
+
                 "vless",
 
 
+
                 "settings":
+
                 {
 
+
+
                     "vnext":
+
                     [
+
+
 
                         {
 
 
+
                             "address":
+
                             node["address"],
 
 
+
                             "port":
+
                             node["port"],
 
 
+
                             "users":
+
                             [
+
+
 
                                 {
 
 
+
                                     "id":
+
                                     node["uuid"],
 
 
+
                                     "encryption":
-                                    "none",
+
+                                    node.get(
+
+                                        "encryption",
+
+                                        "none"
+
+                                    ),
+
 
 
                                     "flow":
-                                    node["flow"],
 
+                                    node.get(
+
+                                        "flow",
+
+                                        ""
+
+                                    )
 
                                 }
+
+
 
                             ]
 
                         }
+
+
 
                     ]
 
                 },
 
 
+
                 "streamSettings":
-                build_stream_settings(
-                    node
-                ),
+
+                stream_settings
+
 
 
             }
+
+
 
         ]
 
     }
 
 
+
     return config
 
+
+
+
+
 # ==========================================================
-# TEMP CONFIG
+# START XRAY
 # ==========================================================
 
-def create_temp_config(
-    config: dict,
-    index: int,
+
+
+def start_xray(
+
+        config_file
+
 ):
 
-    config_file = (
-        TEMP_DIR
-        /
-        f"xray_test_{index}.json"
-    )
+
+    try:
 
 
-    with config_file.open(
-        "w",
-        encoding="utf-8",
-    ) as file:
+        process = subprocess.Popen(
+
+            [
+
+                str(XRAY_PATH),
+
+                "run",
+
+                "-config",
+
+                str(config_file)
+
+            ],
 
 
-        json.dump(
-            config,
-            file,
-            ensure_ascii=False,
-            indent=2,
+
+            stdout=subprocess.PIPE,
+
+
+            stderr=subprocess.PIPE,
+
+
+            creationflags=subprocess.CREATE_NO_WINDOW
+
         )
 
 
-    return config_file
 
-# ==========================================================
-# XRAY START
-# ==========================================================
-
-def start_xray(
-    config_file: Path,
-):
-
-
-    logger.debug(
-        "Starting Xray with %s",
-        config_file,
-    )
-
-
-    process = subprocess.Popen(
-
-        [
-
-            str(XRAY_PATH),
-
-            "run",
-
-            "-c",
-
-            str(config_file),
-
-        ],
-
-
-        stdout=subprocess.PIPE,
-
-
-        stderr=subprocess.PIPE,
-
-
-        text=True,
-
-
-        creationflags=(
-
-            subprocess.CREATE_NO_WINDOW
-
-            if hasattr(
-                subprocess,
-                "CREATE_NO_WINDOW"
-            )
-
-            else 0
-
-        ),
-
-    )
-
-
-    return process
-
-# ==========================================================
-# XRAY STOP
-# ==========================================================
-
-def stop_xray(
-    process,
-):
-
-
-    if process is None:
-
-        return
+        return process
 
 
 
-    if process.poll() is None:
+    except Exception as e:
 
 
-        process.terminate()
+        logger.error(
+
+            "Xray start failed: %s",
+
+            e
+
+        )
 
 
-        try:
-
-            process.wait(
-                timeout=5
-            )
+        return None
 
 
-        except subprocess.TimeoutExpired:
 
 
-            process.kill()
-
-
-            process.wait()
-
-# ==========================================================
-# PORT CHECK
-# ==========================================================
 
 def wait_port(
-    host: str,
-    port: int,
+
+        port,
+
+        timeout=10
+
 ):
 
 
-    deadline = (
-        time.time()
-        +
-        XRAY_START_TIMEOUT
-    )
+    start = time.time()
 
 
 
-    while time.time() < deadline:
+    while time.time() - start < timeout:
+
+
+
+        sock = socket.socket(
+
+            socket.AF_INET,
+
+            socket.SOCK_STREAM
+
+        )
+
 
 
         try:
 
 
-            with socket.create_connection(
+            sock.settimeout(
+
+                1
+
+            )
+
+
+            sock.connect(
 
                 (
-                    host,
-                    port,
-                ),
 
-                timeout=1,
+                    XRAY_HOST,
 
-            ):
+                    port
 
+                )
 
-                return True
+            )
 
 
 
-        except OSError:
+            sock.close()
+
+
+
+            return True
+
+
+
+        except Exception:
 
 
             time.sleep(
+
                 0.2
+
             )
+
+
+
+        finally:
+
+
+            sock.close()
+
 
 
     return False
 
-# ==========================================================
-# CHECK ONE NODE
-# ==========================================================
 
-def check_node(
-    uri: str,
-    index: int,
+
+
+
+def stop_xray(
+
+        process
+
 ):
 
 
-    result = {
+    if not process:
 
 
-        "node":
-        uri,
-
-
-        "alive":
-        False,
-
-
-        "latency":
-        None,
-
-
-        "error":
-        None,
-
-    }
-
-
-
-    start_time = time.time()
-
-
-
-    node = parse_vless(
-        uri
-    )
-
-
-
-    if not node:
-
-
-        result["error"] = (
-            "parse_failed"
-        )
-
-
-        return result
-
-
-
-    socks_port = get_free_port()
-
-
-
-    config = build_xray_config(
-
-        node,
-
-        socks_port,
-
-    )
-
-
-
-    config_file = None
-
-    process = None
+        return
 
 
 
     try:
 
 
-        config_file = create_temp_config(
-
-            config,
-
-            index,
-
-        )
+        process.terminate()
 
 
 
-        process = start_xray(
+        process.wait(
 
-            config_file
+            timeout=3
 
         )
 
 
 
-        # ждём, не умер ли Xray
+    except Exception:
 
-        time.sleep(
-            0.5
+
+        try:
+
+
+            process.kill()
+
+
+        except Exception:
+
+
+            pass
+
+# ==========================================================
+# PROXY TESTER
+# Skibidi_tualet_proxy
+# ==========================================================
+
+
+
+def test_service(
+
+        name,
+
+        url,
+
+        socks_port
+
+):
+
+
+    proxies = {
+
+
+        "http":
+
+        f"socks5h://{XRAY_HOST}:{socks_port}",
+
+
+
+        "https":
+
+        f"socks5h://{XRAY_HOST}:{socks_port}",
+
+
+    }
+
+
+
+    try:
+
+
+        start = time.time()
+
+
+
+        response = requests.get(
+
+
+            url,
+
+
+            proxies=proxies,
+
+
+            timeout=REQUEST_TIMEOUT,
+
+
+            allow_redirects=True
+
+
         )
 
 
 
-        if process.poll() is not None:
+        latency = (
+
+            time.time()
+
+            -
+
+            start
+
+        ) * 1000
 
 
-            stdout, stderr = process.communicate()
+
+        return {
 
 
-            result["error"] = (
+            "ok":
 
-                stderr
+            True,
 
-                or
 
-                stdout
 
-                or
+            "status":
 
-                "xray_failed"
+            response.status_code,
+
+
+
+            "latency":
+
+            round(
+
+                latency,
+
+                0
+
+            )
+
+        }
+
+
+
+    except Exception as e:
+
+
+        return {
+
+
+            "ok":
+
+            False,
+
+
+
+            "error":
+
+            str(e)
+
+        }
+
+
+
+
+
+
+
+def test_proxy(
+
+        socks_port
+
+):
+
+
+    results = {}
+
+
+
+    for name, url in TEST_TARGETS.items():
+
+
+        result = test_service(
+
+
+            name,
+
+
+            url,
+
+
+            socks_port
+
+
+        )
+
+
+        results[name] = result
+
+
+
+
+        if result["ok"]:
+
+
+            logger.info(
+
+                "%s OK %sms",
+
+                name,
+
+                result.get(
+
+                    "latency",
+
+                    "?"
+
+                )
 
             )
 
 
-            return result
+        else:
 
+
+            logger.warning(
+
+                "%s FAIL %s",
+
+                name,
+
+                result.get(
+
+                    "error",
+
+                    ""
+
+                )
+
+            )
+
+
+
+    return results
+
+
+
+
+
+def calculate_score(
+
+        results
+
+):
+
+
+    score = 0
+
+
+
+    for service in results.values():
+
+
+
+        if service.get(
+
+            "ok",
+
+            False
+
+        ):
+
+
+            score += 25
+
+
+
+    return score
+
+
+
+
+
+def check_node(
+
+        node
+
+):
+
+
+    socks_port = (
+
+        SOCKS_START_PORT
+
+        +
+
+        random.randint(
+
+            1,
+
+            500
+
+        )
+
+    )
+
+
+
+    config = build_xray_config(
+
+
+        node,
+
+
+        socks_port
+
+
+    )
+
+
+
+    config_file = (
+
+        TEMP_DIR
+
+        /
+
+        f"xray_test_{socks_port}.json"
+
+    )
+
+
+
+    with open(
+
+        config_file,
+
+        "w",
+
+        encoding="utf-8"
+
+    ) as f:
+
+
+
+        json.dump(
+
+            config,
+
+            f,
+
+            indent=4,
+
+            ensure_ascii=False
+
+        )
+
+
+
+    process = start_xray(
+
+        config_file
+
+    )
+
+
+
+    if not process:
+
+
+        return {
+
+
+            "ok":
+
+            False,
+
+
+            "error":
+
+            "xray_start_failed"
+
+        }
+
+
+
+
+
+    try:
 
 
 
         if not wait_port(
 
-            LOCAL_HOST,
-
-            socks_port,
+            socks_port
 
         ):
 
 
-            result["error"] = (
+            return {
+
+
+                "ok":
+
+                False,
+
+
+                "error":
 
                 "socks_not_started"
 
-            )
-
-
-            return result
+            }
 
 
 
-        if test_proxy(socks_port):
 
-            result["alive"] = True
-
-        else:
-
-            stdout, stderr = process.communicate(
-                timeout=2
-            )
-
-
-            logger.warning(
-                "XRAY STDOUT:\n%s",
-                stdout
-            )
-
-
-            logger.warning(
-                "XRAY STDERR:\n%s",
-                stderr
-            )
-
-
-            result["error"] = "http_test_failed"
-
-            return result
+        start = time.time()
 
 
 
-        result["latency"] = round(
+        tests = test_proxy(
 
-            (
-
-                time.time()
-
-                -
-
-                start_time
-
-            )
-
-            *
-
-            1000,
-
-            2,
+            socks_port
 
         )
 
 
 
-    except Exception as error:
+        elapsed = (
 
+            time.time()
 
-        result["error"] = str(
-            error
+            -
+
+            start
+
         )
+
+
+
+        score = calculate_score(
+
+            tests
+
+        )
+
+
+
+
+        return {
+
+
+            "ok":
+
+            score > 0,
+
+
+
+            "node":
+
+            node,
+
+
+
+            "name":
+
+            node["name"],
+
+
+
+            "score":
+
+            score,
+
+
+
+            "tests":
+
+            tests,
+
+
+
+            "time":
+
+            round(
+
+                elapsed,
+
+                2
+
+            )
+
+        }
+
 
 
 
     finally:
 
 
+
         stop_xray(
+
             process
+
         )
 
 
 
-        if (
-
-            REMOVE_TEMP_FILES
-
-            and
-
-            config_file
-
-            and
-
-            config_file.exists()
-
-        ):
+        try:
 
 
-            try:
-
-                config_file.unlink()
-
-            except Exception:
-
-                pass
+            config_file.unlink()
 
 
 
-    return result
+        except Exception:
+
+
+            pass
 
 # ==========================================================
-# HTTP TEST THROUGH SOCKS
+# CHUNK PROCESSOR
+# Skibidi_tualet_proxy
 # ==========================================================
 
-def test_proxy(port: int):
 
 
-    proxies = {
-
-        "http":
-        f"socks5h://{LOCAL_HOST}:{port}",
+MAX_NODES_PER_CHUNK = 1000
 
 
-        "https":
-        f"socks5h://{LOCAL_HOST}:{port}",
 
-    }
+CHECK_DELAY = 0.2
+
+
+
+
+
+def save_json(
+
+        data
+
+):
 
 
     try:
 
 
-        response = requests.get(
+        with open(
 
-            TEST_URL,
+            STATS_FILE,
 
-            proxies=proxies,
+            "w",
 
-            timeout=REQUEST_TIMEOUT,
+            encoding="utf-8"
 
-            allow_redirects=False,
-
-        )
+        ) as f:
 
 
-        logger.info(
+            json.dump(
 
-            "HTTP TEST: %s",
+                data,
 
-            response.status_code,
+                f,
 
-        )
+                indent=4,
 
+                ensure_ascii=False
 
-        return True
+            )
 
 
 
@@ -1159,231 +2486,339 @@ def test_proxy(port: int):
 
         logger.warning(
 
-            "HTTP TEST ERROR: %s",
+            "Stats save error: %s",
 
-            repr(e),
+            e
 
         )
 
 
-        return False
 
-# ==========================================================
-# CHUNKS PROCESSING
-# ==========================================================
 
-def process_chunk(
-    chunk_file: Path,
-    start_index: int,
+
+
+
+def make_vless_link(
+
+        node
+
 ):
 
 
-    nodes = load_nodes(
-        chunk_file
-    )
+    """
 
+    Возвращаем ссылку с красивым именем
 
-    results = []
-
-
-    logger.info(
-
-        "Checking %s (%s nodes)",
-
-        chunk_file.name,
-
-        len(nodes),
-
-    )
+    """
 
 
 
-    for index, node in enumerate(
-
-        nodes,
-
-        start=start_index,
-
-    ):
+    uri = node["uri"]
 
 
-        result = check_node(
 
-            node,
+    base = uri.split(
 
-            index,
+        "#"
+
+    )[0]
+
+
+
+    return (
+
+        base
+
+        +
+
+        "#"
+
+        +
+
+        quote(
+
+            node["name"]
 
         )
 
-
-        results.append(
-            result
-        )
+    )
 
 
-        if result["alive"]:
 
 
-            logger.info(
-
-                "OK %sms | %s",
-
-                result["latency"],
-
-                node[:70],
-
-            )
 
 
-        else:
 
+def save_results(
 
-            logger.info(
+        good_nodes
 
-                "FAIL | %s",
-
-                result["error"],
-
-            )
-
-
-    return results
-
-# ==========================================================
-# SAVE RESULTS
-# ==========================================================
-
-def save_lines(
-    path: Path,
-    lines: list[str],
 ):
 
 
-    with path.open(
+    # сортировка:
+
+    # лучшие сверху
+
+
+
+    good_nodes.sort(
+
+        key=lambda x:
+
+        x.get(
+
+            "score",
+
+            0
+
+        ),
+
+        reverse=True
+
+    )
+
+
+
+    links = []
+
+
+
+    for item in good_nodes:
+
+
+        links.append(
+
+            make_vless_link(
+
+                item["node"]
+
+            )
+
+        )
+
+
+
+    # checked_vless.txt
+
+
+    with open(
+
+        CHECKED_FILE,
 
         "w",
 
-        encoding="utf-8",
+        encoding="utf-8"
 
-        newline="\n",
-
-    ) as file:
+    ) as f:
 
 
-        file.write(
 
-            "\n".join(lines)
+        for link in links:
+
+
+            f.write(
+
+                link
+
+                +
+
+                "\n"
+
+            )
+
+
+
+    # my_sub.txt
+
+
+    with open(
+
+        MY_SUB_FILE,
+
+        "w",
+
+        encoding="utf-8"
+
+    ) as f:
+
+
+
+        for link in links:
+
+
+            f.write(
+
+                link
+
+                +
+
+                "\n"
+
+            )
+
+
+
+    logger.info(
+
+        "Saved nodes: %s",
+
+        len(links)
+
+    )
+
+
+
+
+
+
+
+
+def process_chunk(
+
+        chunk_file
+
+):
+
+
+    logger.info(
+
+        "Checking %s",
+
+        chunk_file.name
+
+    )
+
+
+
+    nodes = load_chunk(
+
+        chunk_file
+
+    )
+
+
+
+    good = []
+
+
+
+    for index, uri in enumerate(nodes):
+
+
+
+        try:
+
+
+
+            node = parse_vless(
+
+                uri
+
+            )
+
+
+
+            if not node:
+
+
+                continue
+
+
+
+
+            result = check_node(
+
+                node
+
+            )
+
+
+
+
+            if result.get(
+
+                "ok",
+
+                False
+
+            ):
+
+
+
+                good.append(
+
+                    result
+
+                )
+
+
+
+                logger.info(
+
+                    "OK %s | %s",
+
+                    result["score"],
+
+                    node["name"]
+
+                )
+
+
+
+            else:
+
+
+                logger.info(
+
+                    "FAIL | %s",
+
+                    result.get(
+
+                        "error",
+
+                        ""
+
+                    )
+
+                )
+
+
+
+        except Exception as e:
+
+
+            logger.warning(
+
+                "Node error: %s",
+
+                e
+
+            )
+
+
+
+        time.sleep(
+
+            CHECK_DELAY
 
         )
 
 
-        if lines:
 
-            file.write("\n")
-
-# ==========================================================
-# GIT
-# ==========================================================
-
-def git_pull():
-
-    logger.info(
-        "Git pull..."
-    )
-
-
-    subprocess.run(
-
-        [
-
-            "git",
-
-            "pull",
-
-            "--rebase",
-
-        ],
-
-        cwd=BASE_DIR,
-
-        check=True,
-
-    )
+    return good
 
 
 
-def git_push_results():
-
-    subprocess.run(
-
-        [
-
-            "git",
-
-            "add",
-
-            "output",
-
-        ],
-
-        cwd=BASE_DIR,
-
-        check=True,
-
-    )
 
 
-    subprocess.run(
-
-        [
-
-            "git",
-
-            "commit",
-
-            "-m",
-
-            "checker: update proxy results",
-
-        ],
-
-        cwd=BASE_DIR,
-
-        check=False,
-
-    )
 
 
-    subprocess.run(
 
-        [
-
-            "git",
-
-            "push",
-
-        ],
-
-        cwd=BASE_DIR,
-
-        check=True,
-
-    )
-
-# ==========================================================
-# MAIN
-# ==========================================================
-
-def main():
+def process_all_chunks():
 
 
-    prepare_directories()
-
-
-    git_pull()
-
-
-    check_environment()
+    all_good = []
 
 
 
@@ -1391,173 +2826,360 @@ def main():
 
 
 
-    alive = []
+    total = len(
 
-    dead = []
-
-
-
-    total = 0
-
-
-
-    start = time.time()
-
-
-
-    for chunk in chunks:
-
-
-        results = process_chunk(
-
-            chunk,
-
-            total,
-
-        )
-
-
-        total += len(results)
-
-
-
-        for item in results:
-
-
-            if item["alive"]:
-
-
-                alive.append(
-
-                    item["node"]
-
-                )
-
-            else:
-
-
-                dead.append(
-
-                    item["node"]
-
-                )
-
-
-
-        time.sleep(
-            CHUNK_DELAY
-        )
-
-
-
-    save_lines(
-
-        CHECKED_FILE,
-
-        alive,
-
-    )
-
-
-    save_lines(
-
-        DEAD_FILE,
-
-        dead,
+        chunks
 
     )
 
 
 
-    stats = {
+    for number, chunk in enumerate(
 
+        chunks,
 
-        "project":
-        PROJECT_NAME,
+        start=1
 
-
-        "total":
-        total,
-
-
-        "alive":
-        len(alive),
-
-
-        "dead":
-        len(dead),
-
-
-        "time":
-
-        round(
-
-            time.time()
-
-            -
-
-            start,
-
-            2,
-
-        ),
-
-    }
+    ):
 
 
 
-    with STATS_FILE.open(
+        logger.info(
 
-        "w",
+            "Chunk %s/%s",
 
-        encoding="utf-8",
+            number,
 
-    ) as file:
-
-
-        json.dump(
-
-            stats,
-
-            file,
-
-            indent=2,
-
-            ensure_ascii=False,
+            total
 
         )
 
 
 
-    logger.info(
-        "Finished"
-    )
+        result = process_chunk(
 
+            chunk
 
-    logger.info(
-        stats
-    )
+        )
 
 
 
-    git_push_results()
+        all_good.extend(
 
-if __name__ == "__main__":
+            result
+
+        )
+
+
+
+        save_results(
+
+            all_good
+
+        )
+
+
+
+        save_json(
+
+            {
+
+
+                "updated":
+
+                datetime.now().isoformat(),
+
+
+
+                "chunks_done":
+
+                number,
+
+
+
+                "alive":
+
+                len(all_good)
+
+            }
+
+        )
+
+
+
+    return all_good
+
+# ==========================================================
+# CLEANUP
+# Skibidi_tualet_proxy
+# ==========================================================
+
+
+
+def cleanup_temp():
+
 
     try:
 
-        main()
+
+        if TEMP_DIR.exists():
+
+
+            for item in TEMP_DIR.iterdir():
+
+
+                try:
+
+
+                    if item.is_file():
+
+
+                        item.unlink()
+
+
+
+                    elif item.is_dir():
+
+
+                        shutil.rmtree(
+
+                            item
+
+                        )
+
+
+
+                except Exception:
+
+
+                    pass
+
+
+
+    except Exception as e:
+
+
+        logger.warning(
+
+            "Cleanup error: %s",
+
+            e
+
+        )
+
+
+
+
+
+
+
+
+def kill_xray_processes():
+
+
+    try:
+
+
+        subprocess.run(
+
+            [
+
+                "taskkill",
+
+                "/F",
+
+                "/IM",
+
+                "xray.exe"
+
+            ],
+
+
+            stdout=subprocess.DEVNULL,
+
+
+            stderr=subprocess.DEVNULL
+
+        )
+
+
+
+    except Exception:
+
+
+        pass
+
+
+
+
+
+
+
+
+# ==========================================================
+# MAIN
+# ==========================================================
+
+
+
+def main():
+
+
+    logger.info(
+
+        "================================="
+
+    )
+
+
+    logger.info(
+
+        "Skibidi_tualet_proxy START"
+
+    )
+
+
+    logger.info(
+
+        "================================="
+
+    )
+
+
+
+    try:
+
+
+
+        check_environment()
+
+
+
+        cleanup_temp()
+
+
+
+        git_pull()
+
+
+
+        alive = process_all_chunks()
+
+
+
+        logger.info(
+
+            "Alive nodes: %s",
+
+            len(alive)
+
+        )
+
+
+
+        save_results(
+
+            alive
+
+        )
+
+
+
+        stats = {
+
+
+            "finished":
+
+            datetime.now().isoformat(),
+
+
+
+            "alive":
+
+            len(alive)
+
+        }
+
+
+
+        save_json(
+
+            stats
+
+        )
+
+
+
+        git_commit_push(
+
+            "Auto update proxy list"
+
+        )
+
+
+
+        logger.info(
+
+            "Finished successfully"
+
+        )
+
 
 
     except KeyboardInterrupt:
 
+
         logger.warning(
-            "Stopped"
+
+            "Stopped by user"
+
         )
 
 
-    except Exception as error:
+
+    except Exception as e:
+
 
         logger.exception(
-            error
+
+            "Fatal error: %s",
+
+            e
+
         )
+
+
+
+    finally:
+
+
+        kill_xray_processes()
+
+
+
+        cleanup_temp()
+
+
+
+        logger.info(
+
+            "Stopped"
+
+        )
+
+
+
+
+
+
+
+# ==========================================================
+# ENTRY POINT
+# ==========================================================
+
+
+
+if __name__ == "__main__":
+
+
+    main()
