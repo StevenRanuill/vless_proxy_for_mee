@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+
+# Logs
+logs/
+*.log
+
+# Xray temporary
+xray.exe
+Xray/*.exe
+geoip.dat
+geosite.dat
+
+# Debug
+debug_xray_config.json
+test.txt
+
+# Generated output
+output/
+
+# Temporary configs
+*.json.tmp
+checker_temp/
