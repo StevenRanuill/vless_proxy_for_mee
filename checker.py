@@ -1016,7 +1016,26 @@ def check_node(
 
         else:
 
+            stdout, stderr = process.communicate(
+                timeout=2
+            )
+
+
+            logger.warning(
+                "XRAY STDOUT:\n%s",
+                stdout
+            )
+
+
+            logger.warning(
+                "XRAY STDERR:\n%s",
+                stderr
+            )
+
+
             result["error"] = "http_test_failed"
+
+            return result
 
 
 
