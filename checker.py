@@ -204,13 +204,17 @@ def git_pull():
 # VLESS PARSER
 # ==========================================================
 
-def parse_vless(uri: str):
+def parse_vless(uri):
 
     try:
 
-# ==========================================================
-# UUID PARSE AND VALIDATION
-# ==========================================================
+        parsed = urlparse(uri)
+
+
+        if parsed.scheme.lower() != "vless":
+
+            return None
+
 
         raw_uuid = parsed.username
 
@@ -218,17 +222,12 @@ def parse_vless(uri: str):
         if not raw_uuid:
 
             logger.warning(
-                "VLESS UUID is empty"
+                "VLESS UUID empty"
             )
 
             return None
 
 
-
-# VLESS ссылки иногда приходят:
-# 1) обычный UUID
-# 2) URL encoded UUID
-# 3) двойной URL encoded UUID
 
         uuid_value = raw_uuid
 
@@ -237,10 +236,12 @@ def parse_vless(uri: str):
 
             decoded = unquote(uuid_value)
 
+
             if decoded == uuid_value:
 
                 break
- 
+
+
             uuid_value = decoded
 
 
@@ -251,7 +252,7 @@ def parse_vless(uri: str):
 
         try:
 
-           uuid.UUID(
+            uuid.UUID(
                 uuid_value
             )
 
@@ -267,7 +268,7 @@ def parse_vless(uri: str):
 
             )
 
-        return None
+            return None
 
 
         return {
@@ -366,11 +367,11 @@ def parse_vless(uri: str):
         }
 
 
-    except Exception as error:
+    except Exception as e:
 
         logger.warning(
             "VLESS parse error: %s",
-            error,
+            e
         )
 
         return None
