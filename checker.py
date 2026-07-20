@@ -7,11 +7,13 @@ import subprocess
 import tempfile
 import time
 import shutil
+import uuid
 
 from pathlib import Path
 from urllib.parse import (
     urlparse,
     parse_qs,
+    unquote,
 )
 
 import requests
@@ -206,34 +208,72 @@ def parse_vless(uri: str):
 
     try:
 
-        parsed = urlparse(uri)
+# ==========================================================
+# UUID PARSE AND VALIDATION
+# ==========================================================
 
-        query = parse_qs(
-            parsed.query,
-            keep_blank_values=True,
-        )
-
-
-        if not parsed.username:
-
-            return None
+        raw_uuid = parsed.username
 
 
-        if not parsed.hostname:
+        if not raw_uuid:
+
+            logger.warning(
+                "VLESS UUID is empty"
+            )
 
             return None
 
 
-        if not parsed.port:
 
-            return None
+# VLESS ссылки иногда приходят:
+# 1) обычный UUID
+# 2) URL encoded UUID
+# 3) двойной URL encoded UUID
+
+        uuid_value = raw_uuid
+
+
+        for _ in range(3):
+
+            decoded = unquote(uuid_value)
+
+            if decoded == uuid_value:
+
+                break
+ 
+            uuid_value = decoded
+
+
+
+        uuid_value = uuid_value.strip()
+
+
+
+        try:
+
+           uuid.UUID(
+                uuid_value
+            )
+
+
+        except ValueError:
+
+
+            logger.warning(
+
+                "Invalid UUID skipped: %s",
+
+                uuid_value,
+
+            )
+
+        return None
 
 
         return {
 
             "uuid":
-            parsed.username,
-
+            uuid_value,
 
             "address":
             parsed.hostname,
