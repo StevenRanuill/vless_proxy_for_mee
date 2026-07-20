@@ -1091,9 +1091,8 @@ def check_node(
 # HTTP TEST THROUGH SOCKS
 # ==========================================================
 
-def test_proxy(
-    port: int,
-):
+def test_proxy(port: int):
+
 
     proxies = {
 
@@ -1123,31 +1122,32 @@ def test_proxy(
         )
 
 
-        if response.status_code in (
+        logger.info(
 
-            200,
+            "HTTP TEST: %s",
 
-            204,
+            response.status_code,
 
-            301,
-
-            302,
-
-        ):
+        )
 
 
-            return True
+        return True
 
 
 
-    except Exception:
+    except Exception as e:
+
+
+        logger.warning(
+
+            "HTTP TEST ERROR: %s",
+
+            repr(e),
+
+        )
 
 
         return False
-
-
-
-    return False
 
 # ==========================================================
 # CHUNKS PROCESSING
