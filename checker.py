@@ -206,14 +206,21 @@ def git_pull():
 
 def parse_vless(uri):
 
+
     try:
 
         parsed = urlparse(uri)
+
+        query = parse_qs(
+            parsed.query
+        )
 
 
         if parsed.scheme.lower() != "vless":
 
             return None
+
+
 
 
         raw_uuid = parsed.username
