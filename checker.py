@@ -206,7 +206,6 @@ def git_pull():
 
 def parse_vless(uri):
 
-
     try:
 
         parsed = urlparse(uri)
@@ -222,6 +221,9 @@ def parse_vless(uri):
 
 
 
+        # ------------------------------
+        # UUID decode
+        # ------------------------------
 
         raw_uuid = parsed.username
 
@@ -241,7 +243,9 @@ def parse_vless(uri):
 
         for _ in range(3):
 
-            decoded = unquote(uuid_value)
+            decoded = unquote(
+                uuid_value
+            )
 
 
             if decoded == uuid_value:
@@ -278,111 +282,158 @@ def parse_vless(uri):
             return None
 
 
+
+        # ------------------------------
+        # Address
+        # ------------------------------
+
+        address = parsed.hostname
+
+
+        if not address:
+
+            logger.warning(
+                "VLESS address empty"
+            )
+
+            return None
+
+
+
+        # ------------------------------
+        # Params helper
+        # ------------------------------
+
+        def get_param(
+            name,
+            default=""
+        ):
+
+            value = query.get(
+                name,
+                [default]
+            )[0]
+
+            return unquote(
+                value
+            )
+
+
+
+        # ------------------------------
+        # Result
+        # ------------------------------
+
         return {
+
 
             "uuid":
             uuid_value,
 
+
             "address":
-            parsed.hostname,
+            address,
 
 
             "port":
-            parsed.port,
+            parsed.port or 443,
 
 
             "security":
-            query.get(
+            get_param(
                 "security",
-                ["none"],
-            )[0],
+                "none",
+            ),
 
 
             "network":
-            query.get(
+            get_param(
                 "type",
-                ["tcp"],
-            )[0],
+                "tcp",
+            ),
 
 
             "flow":
-            query.get(
+            get_param(
                 "flow",
-                [""],
-            )[0],
+                "",
+            ),
 
 
             "sni":
-            query.get(
+            get_param(
                 "sni",
-                query.get(
+                get_param(
                     "serverName",
-                    [""],
+                    "",
                 ),
-            )[0],
+            ),
 
 
             "fingerprint":
-            query.get(
+            get_param(
                 "fp",
-                [
-                    "chrome"
-                ],
-            )[0],
+                "chrome",
+            ),
 
 
             "public_key":
-            query.get(
+            get_param(
                 "pbk",
-                query.get(
+                get_param(
                     "publicKey",
-                    [""],
+                    "",
                 ),
-            )[0],
+            ),
 
 
             "short_id":
-            query.get(
+            get_param(
                 "sid",
-                query.get(
+                get_param(
                     "shortId",
-                    [""],
+                    "",
                 ),
-            )[0],
+            ),
 
 
             "path":
-            query.get(
+            get_param(
                 "path",
-                ["/"],
-            )[0],
+                "/",
+            ),
 
 
             "host":
-            query.get(
+            get_param(
                 "host",
-                [""],
-            )[0],
+                "",
+            ),
 
 
             "service_name":
-            query.get(
+            get_param(
                 "serviceName",
-                [""],
-            )[0],
+                "",
+            ),
 
         }
 
 
+
     except Exception as e:
 
+
         logger.warning(
+
             "VLESS parse error: %s",
-            e
+
+            e,
+
         )
 
-        return None
 
+        return None
 # ==========================================================
 # STREAM SETTINGS
 # ==========================================================
