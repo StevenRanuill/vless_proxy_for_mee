@@ -65,7 +65,7 @@ DEFAULT_SETTINGS = {
     "timeout": 30,
     "retries": 3,
     "retry_delay": 5,
-    "chunk_size": 1000,
+    "chunk_size": 500,
     "decode_base64": True,
     "decode_url": True,
     "deduplicate": True,
